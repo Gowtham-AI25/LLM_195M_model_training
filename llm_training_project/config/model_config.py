@@ -1,0 +1,66 @@
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional
+
+class LLM_model_config(BaseModel):
+    # --- Basic Dimensions ---
+    vocab_size: int = Field(..., gt=0, lt=60000, description="The size of the vocabulary.")
+    emb_dim: int = Field(..., gt=0, description="Model embedding dimension (D).")
+    padding_idx: Optional[int] = Field(None, description="The index for padding tokens.")
+    n_blocks: int = Field(..., gt=0, description="Number of transformer blocks (L).")
+    max_seq_len: int = Field(2048, gt=0, description="The maximum sequence length (T).")
+
+    # --- FFN Configuration ---
+    ffn_half_dim: int = Field(..., gt=0, description='FFN hidden dimension for SwiGLU (Dh/2).')
+
+    # --- Attention/RoPE Configuration ---
+    num_q_heads: int = Field(..., gt=0, description="Number of Query heads (Hq).")
+    num_kv_heads: int = Field(..., gt=0, description="Number of Key/Value heads (Hk).")
+    rope_base: float = Field(10000.0, gt=0, description="Base frequency for RoPE.")
+    
+    # --- Stability/Optimization Parameters ---
+    eps: float = Field(1e-6, gt=0, description="Small constant for RMSNorm.")
+    dropout_rate: float = Field(0.1, ge=0, le=1, description="Dropout rate for regularization.")
+    bias: bool = Field(False, description="Whether to use bias in linear layers (LLaMA uses False).")
+
+    # --- Derived Properties (Set in model_validator) ---
+    head_dim: int = 0
+    group_size: int = 0
+
+    # ----------------------------------------------------------------
+    # --- Core Validation for RoPE and Attention ---
+    # ----------------------------------------------------------------
+
+    @field_validator("emb_dim")
+    @classmethod
+    def emb_dim_checks(cls, value):
+        if value % 2 != 0:
+            raise ValueError("Emb dim (D) must be even.")
+        return value
+
+    @model_validator(mode="after")
+    def validate_derived_and_structural_constraints(self):
+        # 1. Attention Head Dims (Dh)
+        if self.emb_dim % self.num_q_heads != 0:
+            raise ValueError(f"emb_dim ({self.emb_dim}) must be exactly divisible by num_q_heads ({self.num_q_heads}) to determine an integer head_dim.")
+        
+        # NOTE: Head Dim is derived from D / Hq for typical attention sizing
+        self.head_dim = self.emb_dim // self.num_q_heads
+
+        # 2. RoPE Requirement Check (Even Head Dim)
+        if self.head_dim % 2 != 0:
+            raise ValueError(f"Head dimension ({self.head_dim}) must be even, a critical requirement for RoPE rotation logic.")
+
+        # 3. GQA Constraint Check (Hq multiple of Hk)
+        if self.num_q_heads % self.num_kv_heads != 0:
+            raise ValueError(f"num_q_heads ({self.num_q_heads}) must be a multiple of num_kv_heads ({self.num_kv_heads}) for Grouped-Query Attention (GQA).")
+        
+        # 4. GQA Derived Property
+        self.group_size = self.num_q_heads // self.num_kv_heads
+        
+        # 5. KV Cache Dimension Sanity Check (Should match Q output dimension)
+        # Check that the total dimension spanned by K/V heads is consistent with the derived head_dim
+        expected_kv_dim = self.num_kv_heads * self.head_dim
+        if expected_kv_dim > self.emb_dim:
+             raise ValueError(f"Total KV dimension ({expected_kv_dim}) exceeds model emb_dim ({self.emb_dim}). Check your head configuration.")
+
+        return self
