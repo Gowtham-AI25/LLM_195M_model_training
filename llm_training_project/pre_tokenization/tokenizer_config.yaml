@@ -1,7 +1,6 @@
 tokenizer:
   name: meta-llama/Llama-2-7b-chat-hf
   use_fast: true
-  hf_token: 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
   eos_token: "</s>"
 
 processing:
