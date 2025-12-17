@@ -1,0 +1,24 @@
+# =========================================================
+# LLM Model Configuration
+# =========================================================
+
+# --- Core Model Dimensions ---
+vocab_size: 32000
+emb_dim: 2048
+padding_idx: null
+n_blocks: 24
+max_seq_len: 2048
+
+# --- FFN Configuration (SwiGLU) ---
+# This is Dh/2 (LLaMA-style). Actual FFN hidden dim = 2 * ffn_half_dim
+ffn_half_dim: 5504
+
+# --- Attention / RoPE Configuration ---
+num_q_heads: 16
+num_kv_heads: 8
+rope_base: 10000.0
+
+# --- Stability / Optimization ---
+eps: 1.0e-6
+dropout_rate: 0.1
+bias: false

@@ -1,0 +1,71 @@
+# =========================================================
+# LLM Training Configuration
+# =========================================================
+
+# =========================
+# 1. Training Loop
+# =========================
+total_training_steps: 30000
+accumulation_steps: 25
+max_grad_norm: 1.0
+
+# Device & Distributed
+device: cuda
+num_devices: 2
+
+# =========================
+# 2. Optimizer
+# =========================
+optimizer_type: AdamW
+learning_rate: 2.0e-4
+weight_decay: 0.01
+
+beta1: 0.9
+beta2: 0.95
+optim_eps: 1.0e-8
+
+# =========================
+# 3. LR Scheduler (4-phase)
+# =========================
+scheduler_type: CosineAnnealingWithWarmup
+min_lr_ratio: 0.1
+
+warmup_steps: 1000
+plateau_steps: 1500
+decay_steps: 25000
+anneal_steps: 2500
+
+# =========================
+# 4. Data Loader
+# =========================
+dataset_name: wikidump_shards
+block_size: 1024
+batch_size: 4
+
+num_workers: 4
+pin_memory: true
+
+# =========================
+# 5. AMP / Compile / Precision
+# =========================
+use_amp: true
+compile_model: true
+compile_mode: reduce-overhead
+dtype: bfloat16
+
+# =========================
+# 6. Logging & Checkpointing
+# =========================
+log_every_steps: 1
+checkpoint_every_steps: 100
+eval_every_steps: 100
+
+# ========================= 
+# 7. Paths
+# =========================
+checkpoint_path: /content/drive/MyDrive/model_weights
+shard_manager_json_path: /content/drive/MyDrive/shard_files.json
+tensorboard_log_dir: tensorboard_logs
+
+
+

@@ -65,11 +65,9 @@ class ShardManager:
             return None
         return self.shard_files[0]
     
-    def remove_shard(self, shard_file: str) -> str:
+    def remove_shard(self) -> str:
         """
         Remove a shard file path from the list and update the JSON file.
-        Args:
-            shard_file (str): The shard file path to remove.
         """
         if not self.shard_files:
             raise ValueError("No shards to remove.")

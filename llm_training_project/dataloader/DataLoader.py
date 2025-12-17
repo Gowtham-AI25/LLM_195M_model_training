@@ -1,6 +1,6 @@
 import torch 
 from torch.utils.data import DataLoader, DistributedSampler
-from llm_training_project.data.Dataset import SingleShardDataset
+from llm_training_project.dataloader.Dataset import SingleShardDataset
 from typing import Optional
 
 def get_dataloader(

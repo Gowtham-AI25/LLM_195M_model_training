@@ -1,5 +1,7 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
+import yaml
+from pathlib import Path
 
 class LLM_model_config(BaseModel):
     # --- Basic Dimensions ---
@@ -64,3 +66,16 @@ class LLM_model_config(BaseModel):
              raise ValueError(f"Total KV dimension ({expected_kv_dim}) exceeds model emb_dim ({self.emb_dim}). Check your head configuration.")
 
         return self
+    
+    @classmethod
+    def load_from_yaml(cls, json_path: str) -> "LLM_model_config":
+        # check if file exists
+        path = Path(json_path)
+        if not path.exists():
+            raise FileNotFoundError(f"yaml file not found at {path}")
+        
+        # load 
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+        return cls(**data)
+    

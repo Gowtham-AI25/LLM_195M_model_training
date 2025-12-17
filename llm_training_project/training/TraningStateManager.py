@@ -4,9 +4,7 @@ from torch.amp import GradScaler
 from llm_training_project.checkpoints.manager import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config
 from llm_training_project.config.model_config import LLM_model_config
-from llm_training_project.model.model import LLM
 from llm_training_project.utils.Scheduler import Scheduler_4phase
-import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 
@@ -20,22 +18,17 @@ class TrainingStateManager:
         self,
         train_config: LLM_training_config,
         model_config: LLM_model_config,
-        checkpoint_dir: str,
+        checkpoint: CheckpointManager,
         device: torch.device,
     ):
         self.train_config = train_config
         self.model_config = model_config
         self.device = device
 
-        self.checkpoint_manager = CheckpointManager(
-            checkpoint_dir, device
-        )
+        self.checkpoint_manager = checkpoint
 
     def create_model(self, 
-                     model_cls : LLM,
-                     model_config : LLM_model_config,
-                     train_config : LLM_training_config,
-                     device : torch.device,
+                     model_cls,
                      local_rank : int = 0
                 ):
         
@@ -53,13 +46,13 @@ class TrainingStateManager:
                 torch.nn.Module
         """
         # Instantiate the model in CPU memory first
-        model = LLM(model_config)
+        model = model_cls(self.model_config)
 
         # Move model to the correct device
-        model.to(device)
+        model.to(self.device)
 
         # Wrap with DDP if using multiple devices
-        if train_config.num_devices > 1:
+        if self.train_config.num_devices > 1:
             if not torch.distributed.is_initialized():
                 raise RuntimeError(
                     "torch.distributed is not initialized for DDP."
@@ -74,15 +67,15 @@ class TrainingStateManager:
             )
 
         # Compile the model if specified
-        if train_config.compile_model:
+        if self.train_config.compile_model:
             model = torch.compile(
                 model,
-                mode=train_config.compile_mode
+                mode=self.train_config.compile_mode
             )
         
         return model
 
-    def _create_fresh_training_state(self, model):
+    def _create_fresh_training_state(self, model_cls, local_rank : int = 0):
         """
         Create a fresh training state with initial global step.
         """
@@ -90,10 +83,8 @@ class TrainingStateManager:
         # model
         # --------------------
         model = self.create_model(
-            model = model,
-            model_config = self.model_config,
-            train_config = self.train_config,
-            device = self.device,
+            model_cls = model_cls,
+            local_rank = local_rank
         )
 
         # --------------------
@@ -101,18 +92,6 @@ class TrainingStateManager:
         # --------------------
         if self.train_config.optimizer_type == "AdamW":
             optimizer = AdamW(
-                params=model.parameters(),
-                lr=self.train_config.learning_rate,
-                betas=(
-                    self.train_config.beta1,
-                    self.train_config.beta2,
-                ),
-                weight_decay=self.train_config.weight_decay,
-            )
-
-
-        elif self.train_config.optimizer_type == "Lion":
-            optimizer = Lion(
                 params=model.parameters(),
                 lr=self.train_config.learning_rate,
                 betas=(
@@ -151,12 +130,12 @@ class TrainingStateManager:
             "global_step": global_step,
         }
     
-    def load_training_state(self, model_cls: LLM):
+    def load_training_state(self, model_cls, local_rank : int = 0):
         """
         Load training state from checkpoint if available, otherwise create fresh state.
         """
         # Create fresh training state always first
-        state = self._create_fresh_training_state(model_cls)
+        state = self._create_fresh_training_state(model_cls, local_rank)
 
         if self.checkpoint_manager.checkpoint_exists():
             print("[TrainingStateManager] Loading training state from checkpoint...")
