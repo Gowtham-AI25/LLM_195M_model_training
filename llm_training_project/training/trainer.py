@@ -2,6 +2,7 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from typing import Dict
 from torch.amp import autocast
+import math
 
 def train_on_shard(
         model: torch.nn.Module,
@@ -13,9 +14,10 @@ def train_on_shard(
         scaler: torch.cuda.amp.GradScaler,
         start_global_step: int,
         max_grad_norm: float,
-        gradient_accumulation_steps: int = 25
-        writer: 
-    ) -> Dict[str, float]:
+        gradient_accumulation_steps: int = 25,
+        writer = None,
+        rank: int = 0,
+    ):
     """
         Train the model on a single data shard for one epoch.
 
@@ -48,7 +50,7 @@ def train_on_shard(
 
         # ---------- Forward pass with mixed precision ----------
 
-        with autocast(device_type="cuda", dtype = torch.float16):
+        with autocast(device_type = device.type, dtype = torch.float16):
             logits = model(inputs)
 
             raw_loss = criterion(
@@ -56,10 +58,10 @@ def train_on_shard(
                 targets.view(-1)
             )
 
-            loss = raw_loss / gradient_accumulation_steps 
+            scaled_loss = raw_loss / gradient_accumulation_steps 
 
         # ---------- Backward pass with gradient scaling ----------
-        scaler.scale(loss).backward()
+        scaler.scale(scaled_loss).backward()
 
         # ---------- collect raw loss for logging ----------
 
@@ -72,18 +74,29 @@ def train_on_shard(
         if (batch_idx + 1) % gradient_accumulation_steps != 0:
             continue
 
-        
         # Unscale gradients before clipping
         scaler.unscale_(optimizer)
-
+ 
         # Clip gradients to prevent exploding gradients
         grad_norm = clip_grad_norm_(
             model.parameters(),
             max_grad_norm
         ).item()
 
-        # # clip ratio
-        # clip_coef = max_grad_norm / (grad_norm + 1e-6)
+        if rank == 0 and global_step % 100 == 0 and writer is not None:
+
+            writer.log_histograms(
+                step=global_step,
+                model=model
+            )
+
+            writer.log_diagnostics(
+                step=global_step,
+                model=model,
+                optimizer=optimizer
+            )
+
+
 
         # optimize the model parameters
         scaler.step(optimizer)
@@ -93,21 +106,24 @@ def train_on_shard(
         sheduler.step()
         global_step += 1
 
-        logging_payload = {
-            "step": global_step,
-            "raw_loss": raw_loss_value,
-            "lr": optimizer.param_groups[0]['lr'],
-            "grad_norm": grad_norm,
-            "max_grad_norm": max_grad_norm,
-            "grad_scale": scaler.get_scale()
-        }
+        # 1 Perplexity (numerically safe)
+        perplexity = math.exp(raw_loss_value) if raw_loss_value < 20 else float("inf")
+        # 2 Learning rate (current step)
+        lr = optimizer.param_groups[0]["lr"]
+        # 3 AMP gradient scaler value
+        grad_scale = scaler.get_scale()
 
-        
+        if rank == 0 and writer is not None:
+            writer.log_training_metric(
+                step=global_step,
+                loss=raw_loss_value,
+                perplexity = perplexity,
+                lr = lr,
+                grad_scale = grad_scale,
+                grad_norm = grad_norm,
+            )
+            print(f"Step {global_step}: Loss={raw_loss_value:.6f}, Perplexity={perplexity:.6f}, LR={lr:.6e}")
 
-
-
-        log_training_metric_to_tensorboard()
-    
     return {
         "global_step": global_step,
         "total_loss": total_raw_loss,
