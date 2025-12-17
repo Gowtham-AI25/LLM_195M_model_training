@@ -78,19 +78,10 @@ class LLM_training_config(BaseModel):
     # =========================
     # Custom Validation
     # =========================
-    @validator('effective_batch_size', always=True)
-    def check_effective_batch_size(cls, v, values):
-        # Calculates the effective batch size if not explicitly provided
-        batch_size = values.get('batch_size')
-        acc_steps = values.get('accumulation_steps')
-        num_devices = values.get('num_devices')
-        
-        if batch_size is None or acc_steps is None or num_devices is None:
-            return v # Skip if values are missing during initial validation
-            
-        calculated_ebs = batch_size * acc_steps * num_devices
-        if v != calculated_ebs:
-            # Note: In a real system, you might remove the "v" and just calculate it.
-            # Here, we ensure consistency if provided.
-            pass
-        return calculated_ebs
+    @validator("effective_batch_size", always=True)
+    def compute_effective_batch_size(cls, v, values):
+        batch_size = values["batch_size"]
+        acc_steps = values["accumulation_steps"]
+        num_devices = values["num_devices"]
+        return batch_size * acc_steps * num_devices
+

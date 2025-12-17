@@ -1,0 +1,121 @@
+import torch 
+from torch.nn.utils import clip_grad_norm_
+from typing import Dict
+from torch.amp import autocast
+
+def train_on_shard(
+        model: torch.nn.Module,
+        dataloader: torch.utils.data.DataLoader,
+        optimizer: torch.optim.Optimizer,
+        sheduler,
+        criterion: torch.nn.CrossEntropyLoss,  
+        device: torch.device,
+        scaler: torch.cuda.amp.GradScaler,
+        start_global_step: int,
+        max_grad_norm: float,
+        gradient_accumulation_steps: int = 25
+        writer: 
+    ) -> Dict[str, float]:
+    """
+        Train the model on a single data shard for one epoch.
+
+        Args:
+            model (torch.nn.Module): The model to be trained.
+            dataloader (torch.utils.data.DataLoader): DataLoader for the shard.
+            optimizer (torch.optim.Optimizer): Optimizer for updating model parameters.
+            sheduler: Learning rate scheduler.
+            device (torch.device): Device to perform training on.
+            scaler (torch.cuda.amp.GradScaler): Gradient scaler for mixed precision training.
+            max_grad_norm (float): Maximum gradient norm for clipping.
+
+        Returns:
+            Dict[str, float]: Dictionary containing average loss and number of batchs.
+    """
+    # Set model to training mode
+    model.train()
+    # Initialize gradients to zero at the start of the shard training
+    optimizer.zero_grad(set_to_none=True)
+
+    total_raw_loss = 0.0
+    num_micro_batchs = 0
+    global_step = start_global_step
+
+    for batch_idx, batch in enumerate(dataloader):
+
+        inputs, targets = batch
+        inputs = inputs.to(device, non_blocking=True)
+        targets = targets.to(device, non_blocking=True)
+
+        # ---------- Forward pass with mixed precision ----------
+
+        with autocast(device_type="cuda", dtype = torch.float16):
+            logits = model(inputs)
+
+            raw_loss = criterion(
+                logits.view(-1, logits.size(-1)),
+                targets.view(-1)
+            )
+
+            loss = raw_loss / gradient_accumulation_steps 
+
+        # ---------- Backward pass with gradient scaling ----------
+        scaler.scale(loss).backward()
+
+        # ---------- collect raw loss for logging ----------
+
+        raw_loss_value = raw_loss.item()
+        total_raw_loss += raw_loss_value
+        num_micro_batchs += 1
+
+        # ---------- Gradient accumulation step ----------
+
+        if (batch_idx + 1) % gradient_accumulation_steps != 0:
+            continue
+
+        
+        # Unscale gradients before clipping
+        scaler.unscale_(optimizer)
+
+        # Clip gradients to prevent exploding gradients
+        grad_norm = clip_grad_norm_(
+            model.parameters(),
+            max_grad_norm
+        ).item()
+
+        # # clip ratio
+        # clip_coef = max_grad_norm / (grad_norm + 1e-6)
+
+        # optimize the model parameters
+        scaler.step(optimizer)
+        scaler.update()
+        optimizer.zero_grad(set_to_none=True)
+
+        sheduler.step()
+        global_step += 1
+
+        logging_payload = {
+            "step": global_step,
+            "raw_loss": raw_loss_value,
+            "lr": optimizer.param_groups[0]['lr'],
+            "grad_norm": grad_norm,
+            "max_grad_norm": max_grad_norm,
+            "grad_scale": scaler.get_scale()
+        }
+
+        
+
+
+
+        log_training_metric_to_tensorboard()
+    
+    return {
+        "global_step": global_step,
+        "total_loss": total_raw_loss,
+        "num_micro_batchs": num_micro_batchs
+    }
+
+
+                                           
+
+
+
