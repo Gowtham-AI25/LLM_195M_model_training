@@ -3,6 +3,8 @@ from typing import Optional, Literal
 import yaml
 from pathlib import Path
 
+# pydantic version 2.x syntax used
+
 class LLM_training_config(BaseModel):
     # =========================
     # 1. Training Loop Configuration
@@ -46,11 +48,9 @@ class LLM_training_config(BaseModel):
     # =========================
     # 4. Data Loader Configuration
     # =========================
-    dataset_name: str = Field(..., description="Name or path of the dataset.")
     block_size: int = Field(..., gt=0, description="Max sequence length for the data loader (should match model's max_seq_len).")
     batch_size: int = Field(..., gt=0, description="Local (per-device) batch size (B).")
-    
-    # New: Loader Performance
+    # Loader Performance
     num_workers: int = Field(4, ge=0, description="Number of subprocesses to use for data loading.")
     pin_memory: bool = Field(True, description="Whether to copy Tensors into CUDA pinned memory before returning them.")
 
@@ -58,8 +58,6 @@ class LLM_training_config(BaseModel):
     # 5. AMP / Compile & Precision
     # =========================
     use_amp: bool = Field(True, description="Enable Automatic Mixed Precision (AMP).")
-    compile_model: bool = Field(True, description="Enable torch.compile for graph optimization.")
-    compile_mode: Literal['default', 'reduce-overhead', 'max-autotune'] = Field("reduce-overhead", description="Mode for torch.compile.")
     
     # New: Precision Setting
     dtype: Literal['float32', 'bfloat16', 'float16'] = Field('bfloat16', description="Master precision for training (bfloat16 is standard for modern LLMs).")
@@ -73,14 +71,14 @@ class LLM_training_config(BaseModel):
     # New: Directories
     checkpoint_path: str = Field("/content/drive/MyDrive/model_weights", description="Base directory for saving checkpoints.")
     writer_log_dir: str = Field("runs/llm_training", description="TensorBoard log directory.")
-    
+    tensorboard_log_dir: str = Field("tensorboard_logdir/exp1")    
     # New: Evaluation during training
     eval_every_steps: int = Field(100, gt=0, description="Run evaluation on a validation set.")
     
     # =========================
     # Custom Validation
     # =========================
-    @root_validator
+    @root_validator(pre=True)
     def compute_effective_batch_size(cls, values):
         values["effective_batch_size"] = (
             values["batch_size"]

@@ -38,20 +38,17 @@ anneal_steps: 2500
 # =========================
 # 4. Data Loader
 # =========================
-dataset_name: wikidump_shards
+
 block_size: 1024
 batch_size: 4
-
 num_workers: 4
 pin_memory: true
 
 # =========================
-# 5. AMP / Compile / Precision
+# 5. AMP /  Precision
 # =========================
 use_amp: true
-compile_model: true
-compile_mode: reduce-overhead
-dtype: bfloat16
+dtype: float16
 
 # =========================
 # 6. Logging & Checkpointing
@@ -63,9 +60,9 @@ eval_every_steps: 100
 # ========================= 
 # 7. Paths
 # =========================
-checkpoint_path: /content/drive/MyDrive/model_weights
+checkpoint_path: /workspaces/LLM_195M_model_training/llm_training_project/checkpoints/
 shard_manager_json_path: /content/drive/MyDrive/shard_files.json
-tensorboard_log_dir: tensorboard_logs
+tensorboard_log_dir: tensorboard_logs/exp
 
 
 

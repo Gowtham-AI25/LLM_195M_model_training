@@ -7,6 +7,8 @@ import torch.nn as nn
 class Embeddings(nn.Module):
     def __init__(self, config):
         super().__init__()
+
+        self.emb_dim = config.emb_dim
         
         self.emb_layer = nn.Embedding(
             num_embeddings=config.vocab_size,

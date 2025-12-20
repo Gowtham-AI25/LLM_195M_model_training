@@ -1,6 +1,6 @@
 import torch 
 from llm_training_project.training.TraningStateManager import TrainingStateManager
-from llm_training_project.checkpoints.manager import CheckpointManager
+from llm_training_project.checkpoints.checkpoint import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config
 from llm_training_project.config.model_config import LLM_model_config
 from llm_training_project.utils.HF_utils import HFUtils

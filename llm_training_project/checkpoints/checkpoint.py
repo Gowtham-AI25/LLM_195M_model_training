@@ -1,4 +1,5 @@
 import torch 
+from pathlib import Path
 
 class CheckpointManager:
     """
@@ -6,7 +7,7 @@ class CheckpointManager:
     scheduler, scaler, and other training state components.
     """
     def __init__(self, checkpoint_dir: str, device: torch.device):
-        self.checkpoint_dir = checkpoint_dir
+        self.checkpoint_dir = Path(checkpoint_dir)
         self.device = device
         # Create checkpoint directory if it doesn't exist
         self.checkpoint_dir.mkdir(parents=True, exist_ok=True)
@@ -58,7 +59,7 @@ class CheckpointManager:
             optimizer,
             scheduler,
             scaler,
-            name: str = "letest",
+            name: str = "checkpoint",
     ) -> int:
         """
         Load the training state from a checkpoint file.

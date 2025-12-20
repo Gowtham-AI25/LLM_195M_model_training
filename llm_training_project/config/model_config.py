@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional
+from typing import Optional, Literal
 import yaml
 from pathlib import Path
+
+# pydantic version 2.x syntax used
 
 class LLM_model_config(BaseModel):
     # --- Basic Dimensions ---
@@ -24,9 +26,15 @@ class LLM_model_config(BaseModel):
     dropout_rate: float = Field(0.1, ge=0, le=1, description="Dropout rate for regularization.")
     bias: bool = Field(False, description="Whether to use bias in linear layers (LLaMA uses False).")
 
-    # --- Derived Properties (Set in model_validator) ---
-    head_dim: int = 0
-    group_size: int = 0
+    # # --- Derived Properties (Set in model_validator) ---
+    head_dim: int = Field(0, description="head_dim")
+    group_size: int = Field(0, description="groupsize value")
+
+    # ---- compile settings ----
+    compile_model: bool = Field(True, description="Enable torch.compile for graph optimization.")
+    compile_mode: Literal['default', 'reduce-overhead', 'max-autotune'] = Field("reduce-overhead", description="Mode for torch.compile.")
+
+
 
     # ----------------------------------------------------------------
     # --- Core Validation for RoPE and Attention ---

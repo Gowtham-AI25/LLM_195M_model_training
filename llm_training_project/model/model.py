@@ -6,7 +6,7 @@ from llm_training_project.model.FFN_Expert import Expert_GPU_Optimized
 from llm_training_project.model.GQattention import Grouped_Query_Attention
 from llm_training_project.config.model_config import LLM_model_config
 from llm_training_project.model.Embeddings import Embeddings, LM_head
-from llm_training_project.model.Rope import RoPE
+from llm_training_project.model.Rope import RoPE_Gpu_optimized
 
 
 class TransformerBlock(nn.Module):
@@ -37,7 +37,7 @@ class LLM(nn.Module):
 
         # Share RoPE instance across all blocks
         # Setting dtype to model's default (e.g., torch.bfloat16) is best for perf
-        rope_instance = RoPE(config, dtype=self.emb_layer.emb_layer.weight.dtype)
+        rope_instance = RoPE_Gpu_optimized(config, dtype=self.emb_layer.emb_layer.weight.dtype)
 
         # Instantiate Transformer Blocks
         self.transformer_blocks = nn.ModuleList([

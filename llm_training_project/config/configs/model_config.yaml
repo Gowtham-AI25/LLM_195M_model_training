@@ -5,7 +5,7 @@
 # --- Core Model Dimensions ---
 vocab_size: 32000
 emb_dim: 2048
-padding_idx: null
+padding_idx: 0
 n_blocks: 24
 max_seq_len: 2048
 
@@ -22,3 +22,7 @@ rope_base: 10000.0
 eps: 1.0e-6
 dropout_rate: 0.1
 bias: false
+
+# -----  Compile  ------
+compile_model: true
+compile_mode: reduce-overhead
