@@ -1,28 +1,25 @@
-# =========================================================
-# LLM Model Configuration
-# =========================================================
 
 # --- Core Model Dimensions ---
-vocab_size: 32000
-emb_dim: 2048
+vocab_size: 1000        # Reduced from 32,000
+emb_dim: 128            # Reduced from 2,048
 padding_idx: 0
-n_blocks: 24
-max_seq_len: 2048
+n_blocks: 2             # Reduced from 24 (Huge memory saver)
+max_seq_len: 128        # Reduced from 2,048
 
 # --- FFN Configuration (SwiGLU) ---
-# This is Dh/2 (LLaMA-style). Actual FFN hidden dim = 2 * ffn_half_dim
-ffn_half_dim: 5504
+# Keeping the ratio, but making it tiny
+ffn_half_dim: 256       
 
 # --- Attention / RoPE Configuration ---
-num_q_heads: 16
-num_kv_heads: 8
+num_q_heads: 4          # Must be divisible by num_kv_heads for GQA
+num_kv_heads: 2
 rope_base: 10000.0
 
 # --- Stability / Optimization ---
 eps: 1.0e-6
-dropout_rate: 0.1
+dropout_rate: 0.0       # Turn off for deterministic testing
 bias: false
 
 # -----  Compile  ------
-compile_model: true
-compile_mode: reduce-overhead
+compile_model: false    # IMPORTANT: Set to false for testing. 
+                        # Compilation takes huge RAM and time.

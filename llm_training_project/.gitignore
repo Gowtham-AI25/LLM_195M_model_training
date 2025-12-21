@@ -1,3 +1,5 @@
 
 #ignore configurations
 config/configs
+
+/workspaces/LLM_195M_model_training/llm_training_project/pre_tokenization/tokenizer_config.yaml

@@ -33,26 +33,3 @@ class Embeddings(nn.Module):
         return self.emb_layer(input_tokens)
     
 
-class LM_head(nn.Module):
-    """
-    Optimized LM Head with correct LLaMA-style weight tying (no bias).
-    """
-    def __init__(self, config, shared_emb_weight: nn.Parameter):
-        super().__init__()
-        
-        # 1. Create a placeholder Linear module
-        self.linear = nn.Linear(
-            config.emb_dim, 
-            config.vocab_size, 
-            bias=False # Crucial: Remove bias
-        )
-        
-        # 2. **CRITICAL STEP:** Directly assign the shared embedding weight.
-        # This correctly ties the weights, meaning self.linear.weight points to 
-        # the same memory as the embedding weights.
-        self.linear.weight = shared_emb_weight
-
-    def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
-        # Standard forward pass through the Linear layer.
-        # This is already highly optimized and compile-friendly.
-        return self.linear(hidden_state)

@@ -11,7 +11,7 @@ max_grad_norm: 1.0
 
 # Device & Distributed
 device: cuda
-num_devices: 2
+num_devices: 1
 
 # =========================
 # 2. Optimizer

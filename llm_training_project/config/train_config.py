@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional, Literal
 import yaml
 from pathlib import Path
@@ -78,25 +78,28 @@ class LLM_training_config(BaseModel):
     # =========================
     # Custom Validation
     # =========================
-    @root_validator(pre=True)
-    def compute_effective_batch_size(cls, values):
-        values["effective_batch_size"] = (
-            values["batch_size"]
-            * values["accumulation_steps"]
-            * values["num_devices"]
-        )
-        return values
+    @model_validator(mode="before")
+    @classmethod
+    def compute_effective_batch_size(cls, data: dict) -> dict:
+        # Calculate the derived property from the raw input dictionary
+        if all(k in data for k in ("batch_size", "accumulation_steps", "num_devices")):
+            data["effective_batch_size"] = (
+                data["batch_size"]
+                * data["accumulation_steps"]
+                * data["num_devices"]
+            )
+        return data
     
     @classmethod
     def load_from_yaml(cls, yaml_path: str) -> "LLM_training_config":
-        # Ensure the YAML file exists
         path = Path(yaml_path)
         if not path.is_file():
             raise FileNotFoundError(f"Config file not found at: {yaml_path}")
         
-        # load yaml form path 
         with open(path, 'r') as f:
             data = yaml.safe_load(f)
 
-        return cls(**data) # create instance and return
+        # In V2, this triggers the model_validator(mode="before") logic
+        return cls(**data)
+
 

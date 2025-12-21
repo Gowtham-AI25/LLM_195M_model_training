@@ -67,7 +67,7 @@ class TrainingStateManager:
             )
 
         # Compile the model if specified
-        if self.train_config.compile_model:
+        if self.model_config.compile_model:
             model = torch.compile(
                 model,
                 mode=self.train_config.compile_mode
@@ -148,7 +148,6 @@ class TrainingStateManager:
             )
 
             state["global_step"] = global_step
-
             print(f"[TrainingStateManager] Loaded checkpoint at global step {global_step}.")
         else:
             print("[TrainingStateManager] No checkpoint found, starting fresh training state.")

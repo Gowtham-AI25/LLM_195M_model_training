@@ -5,7 +5,8 @@ from llm_training_project.model.RMSNorm import RMSNorm
 from llm_training_project.model.FFN_Expert import Expert_GPU_Optimized
 from llm_training_project.model.GQattention import Grouped_Query_Attention
 from llm_training_project.config.model_config import LLM_model_config
-from llm_training_project.model.Embeddings import Embeddings, LM_head
+from llm_training_project.model.Embeddings import Embeddings
+from llm_training_project.model.LMHead import LM_head
 from llm_training_project.model.Rope import RoPE_Gpu_optimized
 
 

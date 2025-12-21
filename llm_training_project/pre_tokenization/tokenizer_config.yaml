@@ -2,6 +2,7 @@ tokenizer:
   name: meta-llama/Llama-2-7b-chat-hf
   use_fast: true
   eos_token: "</s>"
+  hf_token: "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"
 
 processing:
   text_column: text
@@ -15,7 +16,7 @@ files:
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0002.parquet
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0003.parquet
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0004.parquet
-  - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset /resolve/main/clean_wikidump_0005.parquet
+  - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0005.parquet
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0006.parquet
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0007.parquet
   - https://huggingface.co/datasets/gowthamgoli/wikimedia_dataset/resolve/main/clean_wikidump_0008.parquet
