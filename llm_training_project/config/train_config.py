@@ -67,13 +67,18 @@ class LLM_training_config(BaseModel):
     # =========================
     log_every_steps: int = Field(1, gt=0, description="Log metrics to console/TensorBoard.")
     checkpoint_every_steps: int = Field(100, gt=0, description="Save model and optimizer state.")
-    
-    # New: Directories
-    checkpoint_path: str = Field("/content/drive/MyDrive/model_weights", description="Base directory for saving checkpoints.")
-    writer_log_dir: str = Field("runs/llm_training", description="TensorBoard log directory.")
-    tensorboard_log_dir: str = Field("tensorboard_logdir/exp1")    
+
     # New: Evaluation during training
     eval_every_steps: int = Field(100, gt=0, description="Run evaluation on a validation set.")
+    
+    # New: Directories
+    checkpoint_path: str = Field( ..., description="Full path to the model checkpoint file.")
+    dataset_dir: str = Field(..., description="Directory where dataset shard files are stored.")
+    checkpoint_dir: str = Field(..., description="Base directory for saving model checkpoints.")
+
+    writer_log_dir: str = Field("runs/llm_training", description="TensorBoard log directory.")
+    tensorboard_log_dir: str = Field("tensorboard_logdir/exp1")    
+
     
     # =========================
     # Custom Validation

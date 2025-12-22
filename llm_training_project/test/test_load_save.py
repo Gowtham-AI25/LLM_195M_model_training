@@ -1,34 +1,3 @@
-# import torch
-# import os 
-# import pytest 
-# import shutil
-# from pathlib import Path
-
-# from llm_training_project.checkpoints.checkpoint import CheckpointManager
-# from llm_training_project.config.train_config import LLM_training_config
-# from llm_training_project.config.model_config import LLM_model_config
-# from llm_training_project.training.TraningStateManager import TrainingStateManager
-# from llm_training_project.model.model import LLM
-
-# @pytest.fixture
-# def test_setup():
-#     device = torch.device("cpu")
-#     model_config = LLM_model_config.load_from_yaml("llm_training_project/config/configs/model_config.yaml")
-#     train_config = LLM_training_config.load_from_yaml("llm_training_project/config/configs/train_config.yaml")
-#     ckpt_manager = CheckpointManager(train_config.checkpoint_path, device)
-#     state_manager = TrainingStateManager(train_config, model_config, ckpt_manager, device)
-    
-#     yield state_manager, ckpt_manager, train_config.checkpoint_path
-
-#     if os.path.exists(train_config.checkpoint_path):
-#         shutil.rmtree(train_config.checkpoint_path)
-
-# def test_fresh_initialization(test_setup):
-#     state_manager, ckpt_manager, ckpt_path = test_setup
-#     state = state_manager.load_training_state(LLM)
-
-#     assert isinstance(state['model'], torch.nn.Module)
-#     assert isinstance(state['optimizer'], torch.optim.AdamW)
 
 import torch
 import torch.distributed as dist
@@ -74,9 +43,6 @@ def test_checkpoint_saving(get_state):
     path = ckpt_manager.save_checkpoint(**state, name="checkpoint")
     # Check if checkpoint was saved
     assert os.path.exists(path)
-
-
-
 
 if __name__ == "__main__":
     pytest.main([__file__])

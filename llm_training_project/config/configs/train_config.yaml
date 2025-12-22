@@ -60,7 +60,9 @@ eval_every_steps: 100
 # ========================= 
 # 7. Paths
 # =========================
-checkpoint_path: /workspaces/LLM_195M_model_training/llm_training_project/checkpoints/
+checkpoint_path: "llm_training_project/checkpoints_dir/checkpoints/checkpoint.pt"
+dataset_dir: "llm_training_project/shards/dataset_dir"
+checkpoint_dir: "llm_training_project/checkpoints_dir"
 shard_manager_json_path: /content/drive/MyDrive/shard_files.json
 tensorboard_log_dir: tensorboard_logs/exp
 
