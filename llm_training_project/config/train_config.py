@@ -17,7 +17,7 @@ class LLM_training_config(BaseModel):
     
     # New: Device Management
     device: str = Field("cuda", description="Device to use (e.g., 'cuda', 'cpu').")
-    num_devices: int = Field(1, ge=1, description="Number of GPUs used (for distributed training).")
+    num_devices: int = Field(2, ge=1, description="Number of GPUs used (for distributed training).")
 
     # =========================
     # 2. Optimizer Configuration
