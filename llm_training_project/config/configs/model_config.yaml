@@ -1,24 +1,37 @@
-
-# --- Core Model Dimensions ---
-vocab_size: 1000        # Reduced from 32,000
-emb_dim: 128            # Reduced from 2,048
+# -------------------------
+# Tokenizer / Embedding
+# -------------------------
+vocab_size: 32000
+emb_dim: 832              # Slightly reduced width (compute-efficient)
 padding_idx: 0
-n_blocks: 2             # Reduced from 24 (Huge memory saver)
-max_seq_len: 128        # Reduced from 2,048
+max_seq_len: 1024         # As requested
+tie_embeddings: true
 
-# --- FFN Configuration (SwiGLU) ---
-ffn_hidden_dim: 256       
+# -------------------------
+# Transformer Depth
+# -------------------------
+n_blocks: 18              # Deeper > wider for 195M at shorter context
 
-# --- Attention / RoPE Configuration ---
-num_q_heads: 4          # Must be divisible by num_kv_heads for GQA
-num_kv_heads: 2
+# -------------------------
+# Attention (GQA)
+# -------------------------
+num_q_heads: 12
+num_kv_heads: 6
 rope_base: 10000.0
 
-# --- Stability / Optimization ---
+# -------------------------
+# FFN (SwiGLU)
+# -------------------------
+ffn_hidden_dim: 2816      # ≈ 3.38 × emb_dim (compensates GQA + weight tying)
+
+# -------------------------
+# Stability / Optimization
+# -------------------------
 eps: 1.0e-6
-dropout_rate: 0.0       # Turn off for deterministic testing
+dropout_rate: 0.1
 bias: false
 
-# -----  Compile  ------
-compile_model: false    # IMPORTANT: Set to false for testing. 
-                        # Compilation takes huge RAM and time.
+# -------------------------
+# Compile
+# -------------------------
+compile_model: false
