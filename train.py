@@ -44,13 +44,6 @@ def main():
         json_path = train_config.shard_manager_json_path
     )
 
-    tb_logger = None
-    if rank == 0:
-        # tensorboard logger
-        tb_logger = TensorBoardLogger(
-            log_dir = train_config.tensorboard_log_dir
-        )
-
     # initializ TrainingStateManager to get model, optimizer, scaler, scheduler, etc.
     state_manager = TrainingStateManager(
         train_config,
@@ -61,6 +54,23 @@ def main():
 
     # Load or create training state
     model_states = state_manager.load_training_state(model_cls=LLM, local_rank=local_rank)
+
+    tb_logger = None
+    if rank == 0:
+        # W&B logger
+        resume_id = model_states.get("wandb_run_id")
+        # Initialize W&B
+        wandb.init(
+            project="LLM_195M_Training",
+            id=resume_id, 
+            resume="allow" if resume_id else None,
+            config={**train_config.dict(), **model_config.dict()}
+        )
+        
+        # tensorboard logger
+        tb_logger = TensorBoardLogger(
+            log_dir = train_config.tensorboard_log_dir
+        )
 
     for _ in range(len(shard_manager.shard_files)):
         shard_url = shard_manager.get_next_shard()
@@ -142,6 +152,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
