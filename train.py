@@ -60,14 +60,28 @@ def main():
     model_states = state_manager.load_training_state(model_cls=LLM, local_rank=local_rank)
 
     for _ in range(len(shard_manager.shard_files)):
-        
         shard_file = shard_manager.get_next_shard()
 
-        file_local_path = hf_api.download_hf_file_from_url(
-            file_url = shard_file,
-            local_datasetdir = train_config.dataset_dir
+        parts = shard_url.split("/")
+        relative_path = os.path.join(parts[-2], parts[-1])  # tokens/batch_0002.pt
+        
+        file_local_path = os.path.join(
+            train_config.dataset_dir,
+            relative_path
         )
-
+        # Rank 0 only downloads file
+        # -------------------------
+        if dist.get_rank() == 0:
+            os.makedirs(os.path.dirname(file_local_path), exist_ok=True)
+        
+            hf_api.download_hf_file_from_url(
+                file_url=shard_url,
+                local_datasetdir=train_config.dataset_dir
+            )
+        
+        # Synchronize all GPUs
+        dist.barrier()
+        
         dataloader = get_dataloader(
             shard_file = file_local_path,
             batch_size = train_config.batch_size,
@@ -125,6 +139,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
