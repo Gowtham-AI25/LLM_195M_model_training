@@ -19,7 +19,6 @@ class Expert_GPU_Optimized(nn.Module):
         # For simplicity, we use config.ffn_hidden_dim as the HALF size (Dh/2)
         self.ffn_half_dim = config.ffn_half_dim 
         self.n_layers = config.n_blocks
-        self.dropout_rate = getattr(config, 'dropout_rate', 0.0) # Safe access
         self.bias = getattr(config, 'bias', False) # LLaMA models use bias=False
 
         # Fused W1 (Gate) and W3 (Up) Projection
@@ -33,7 +32,6 @@ class Expert_GPU_Optimized(nn.Module):
         # W2: Down-projection back to model dimension
         self.w2 = nn.Linear(self.ffn_half_dim, self.emb_dim, bias=self.bias)
 
-        self.dropout = nn.Dropout(self.dropout_rate)
         self._init_weights()
 
     def _init_weights(self):
@@ -68,9 +66,7 @@ class Expert_GPU_Optimized(nn.Module):
         # 3. SwiGLU Activation and Element-wise Product
         # F.silu(gate_proj) * up_proj. This is highly fusible in modern compilers (e.g., TorchDynamo/Inductor).
         x = F.silu(gate_proj) * up_proj
-        # 4. Dropout
-        x = self.dropout(x)
-        # 5. Down-projection
+        # 4. Down-projection
         return self.w2(x)
 
 

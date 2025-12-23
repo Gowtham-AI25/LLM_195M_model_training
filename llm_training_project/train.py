@@ -15,8 +15,8 @@ import torch.distributed as dist
 
 def main():
 
-    train_config = LLM_training_config.load_from_yaml("configs/train_config.yaml")
-    model_config = LLM_model_config.load_from_yaml("configs/model_config.yaml")
+    train_config = LLM_training_config.load_from_yaml("llm_training_project/config/configs/train_config.yaml")
+    model_config = LLM_model_config.load_from_yaml("llm_training_project/config/configs/model_config.yaml")
     local_rank = setup_distributed()
     rank = dist.get_rank() if train_config.num_devices > 1 else 0
     world_size = dist.get_world_size() if train_config.num_devices > 1 else 1
@@ -51,20 +51,20 @@ def main():
     hf_api = HFUtils.load_config_from_yaml("llm_training_project/config/configs/hf_config.yaml")
 
     # Load or create training state
-    model_states = state_manager.load_training_state(LLM)
+    model_states = state_manager.load_training_state(model_class=LLM, local_rank=local_rank)
 
     for _ in range(len(shard_manager.shard_files)):
         
         shard_file = shard_manager.get_next_shard()
-    
-        file_local_path = hf_api.download_shard(
+
+        file_local_path = hf_api.download_hf_file_from_url(
             hf_shard_path = shard_file,
             local_dir = train_config.dataset_dir
         )
 
         dataloader = get_dataloader(
             shard_file = file_local_path,
-            batch_size = train_config.batch_size_per_device,
+            batch_size = train_config.batch_size,
             world_size = world_size,
             rank = rank if world_size > 1 else 0,
             num_workers = train_config.num_workers,

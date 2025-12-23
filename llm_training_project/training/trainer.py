@@ -7,7 +7,7 @@ def train_on_shard(
         model: torch.nn.Module,
         dataloader: torch.utils.data.DataLoader,
         optimizer: torch.optim.Optimizer,
-        sheduler,
+        scheduler,
         criterion: torch.nn.CrossEntropyLoss,  
         device: torch.device,
         scaler: torch.cuda.amp.GradScaler,
@@ -40,6 +40,7 @@ def train_on_shard(
     total_raw_loss = 0.0
     num_micro_batchs = 0
     global_step = start_global_step
+    total_batch_loss = 0.0
 
     for batch_idx, batch in enumerate(dataloader):
 
@@ -73,6 +74,7 @@ def train_on_shard(
 
         # ---------- collect raw loss for logging ----------
 
+        total_batch_loss += raw_loss.item()
         raw_loss_value = raw_loss.item()
         total_raw_loss += raw_loss_value
         num_micro_batchs += 1
@@ -111,11 +113,14 @@ def train_on_shard(
         scaler.update()
         optimizer.zero_grad(set_to_none=True)
 
-        sheduler.step()
+        scheduler.step()
         global_step += 1
 
+        # ---------- Logging ----------
+        avg_batch_loss = total_batch_loss / gradient_accumulation_steps
+        total_batch_loss = 0.0
         # 1 Perplexity (numerically safe)
-        perplexity = math.exp(raw_loss_value) if raw_loss_value < 20 else float("inf")
+        perplexity = math.exp(avg_batch_loss) if avg_batch_loss < 20 else float("inf")
         # 2 Learning rate (current step)
         lr = optimizer.param_groups[0]["lr"]
         # 3 AMP gradient scaler value
@@ -124,7 +129,7 @@ def train_on_shard(
         if rank == 0 and writer is not None:
             writer.log_training_metric(
                 step=global_step,
-                loss=raw_loss_value,
+                loss=avg_batch_loss,
                 perplexity = perplexity,
                 lr = lr,
                 grad_scale = grad_scale,

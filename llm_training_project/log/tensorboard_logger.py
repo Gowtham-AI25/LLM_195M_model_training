@@ -2,7 +2,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-class TensorboardLogger:
+class TensorBoardLogger:
 
     def __init__(self, log_dir: str):
         self.writer = SummaryWriter(log_dir)

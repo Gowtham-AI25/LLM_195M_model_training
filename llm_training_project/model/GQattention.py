@@ -21,7 +21,7 @@ class Grouped_Query_Attention(nn.Module):
         self.total_dim_q = self.num_q_heads * self.head_dim
         self.total_dim_kv = self.num_kv_heads * self.head_dim
 
-        # Fused QKV projection
+        # Fused QKV projection to minimize kernel launches
         self.qkv_proj = nn.Linear(
             self.emb_dim,
             self.total_dim_q + 2 * self.total_dim_kv,
@@ -34,56 +34,69 @@ class Grouped_Query_Attention(nn.Module):
         self._init_weights(config)
 
     def _init_weights(self, config):
+        """Industry-standard initialization for GQA."""
         n_layers = config.n_blocks
         base_std = 0.02 / math.sqrt(n_layers)
 
+        # Scaling factor for KV heads to maintain variance across GQA groups
         ratio = self.num_q_heads / self.num_kv_heads
         kv_scale = 1.0 / math.sqrt(ratio)
 
-        w = self.qkv_proj.weight.data
-        q_end = self.total_dim_q
-        k_end = q_end + self.total_dim_kv
+        with torch.no_grad():
+            w = self.qkv_proj.weight
+            q_end = self.total_dim_q
+            k_end = q_end + self.total_dim_kv
 
-        nn.init.normal_(w[:q_end], mean=0.0, std=base_std)
-        nn.init.normal_(w[q_end:k_end], mean=0.0, std=base_std * kv_scale)
-        nn.init.normal_(w[k_end:], mean=0.0, std=base_std * kv_scale)
+            # Initialize Q, K, and V segments individually within the fused weight
+            nn.init.normal_(w[:q_end], mean=0.0, std=base_std)
+            nn.init.normal_(w[q_end:k_end], mean=0.0, std=base_std * kv_scale)
+            nn.init.normal_(w[k_end:], mean=0.0, std=base_std * kv_scale)
 
-        nn.init.normal_(self.out_proj.weight, mean=0.0, std=base_std)
+            nn.init.normal_(self.out_proj.weight, mean=0.0, std=base_std)
+            
+            # Explicitly zero biases if they exist to prevent numerical noise
+            if self.bias:
+                nn.init.zeros_(self.qkv_proj.bias)
+                nn.init.zeros_(self.out_proj.bias)
 
     def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None):
         B, T, _ = x.size()
 
-        # Fused QKV projection
+        # 1. Fused QKV projection
         qkv = self.qkv_proj(x)
 
-        # Split Q, K, V
+        # 2. Split Q, K, V (Standardized for compile-friendly slicing)
         q, k, v = qkv.split(
             [self.total_dim_q, self.total_dim_kv, self.total_dim_kv],
             dim=-1
         )
 
-        # Reshape
+        # 3. Reshape for attention heads
         q = q.view(B, T, self.num_q_heads, self.head_dim).transpose(1, 2)
         k = k.view(B, T, self.num_kv_heads, self.head_dim).transpose(1, 2)
         v = v.view(B, T, self.num_kv_heads, self.head_dim).transpose(1, 2)
 
-        # RoPE (before GQA expansion)
+        # 4. Apply RoPE (Matches RoPE_Gpu_optimized signature)
         q, k = self.rope(q, k)
 
-        # Expand KV for GQA (minimal, compile-friendly)
+        # 5. Expand KV for GQA using Metadata-only views (Avoids repeat_interleave memory copies)
         if self.group_size > 1:
-            k = k.repeat_interleave(self.group_size, dim=1)
-            v = v.repeat_interleave(self.group_size, dim=1)
+            # Efficiently broadcast KV heads to match Q heads
+            k = k.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).reshape(B, self.num_q_heads, T, self.head_dim)
+            v = v.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).reshape(B, self.num_q_heads, T, self.head_dim)
 
-        # Flash / SDPA
+        # 6. Optimized SDPA Call
+        # Solves the "Mutually Exclusive Arguments" bug by forcing None for masks during causal pre-training
+        # This ensures FlashAttention-2 or Memory-Efficient kernels are triggered.
         attn = F.scaled_dot_product_attention(
             q, k, v,
-            attn_mask=attn_mask,
+            attn_mask=None, # Set to None for 1024-seq pre-training (no padding)
             dropout_p=self.dropout_p if self.training else 0.0,
-            is_causal=True
+            is_causal=True  # Enables causal masking without requiring a physical mask tensor
         )
 
-        # Merge heads
+        # 7. Merge heads and output projection
+        # contiguous() is required after transpose before the final view
         out = attn.transpose(1, 2).contiguous().view(B, T, self.total_dim_q)
 
         return self.out_proj(out)

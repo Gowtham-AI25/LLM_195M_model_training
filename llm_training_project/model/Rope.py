@@ -29,9 +29,10 @@ class RoPE_Gpu_optimized(nn.Module):
         cos = torch.cat([cos, cos], dim=-1).to(dtype)  # (T, Dh)
         sin = torch.cat([sin, sin], dim=-1).to(dtype)
 
-        self.register_buffer("cos_cached", cos, persistent=False)
-        self.register_buffer("sin_cached", sin, persistent=False)
-
+        # Cache for future use
+        self.register_buffer("cos_cached", cos)
+        self.register_buffer("sin_cached", sin)
+        
     @staticmethod
     def rotate_half(x: torch.Tensor):
         # x: (..., Dh)

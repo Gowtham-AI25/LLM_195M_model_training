@@ -70,7 +70,11 @@ class TrainingStateManager:
         if self.model_config.compile_model:
             model = torch.compile(
                 model,
-                mode=self.train_config.compile_mode
+                mode=self.train_config.compile_mode,
+                fullgraph= True,  # either compile entire model or throw an error
+                dynamic=False,    # static shapes for LLMs fixed input sizes we used this
+                backend="inductor"  # PyTorch's default backend
+
             )
         
         return model
