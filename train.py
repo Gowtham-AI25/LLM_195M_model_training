@@ -86,7 +86,7 @@ def main():
             device = state_manager.device,
             scaler = model_states["scaler"],
             max_grad_norm = train_config.max_grad_norm,
-            gradient_accumulation_steps = train_config.gradient_accumulation_steps,
+            gradient_accumulation_steps = train_config.accumulation_steps,
             start_global_step = model_states["global_step"],
             writer = tb_logger,
             rank = rank,
@@ -125,6 +125,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
