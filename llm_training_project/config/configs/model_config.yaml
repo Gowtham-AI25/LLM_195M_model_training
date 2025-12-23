@@ -10,7 +10,7 @@ tie_embeddings: true    # Weight tying enabled to save params for depth
 # -------------------------
 # Transformer Depth
 # -------------------------
-n_blocks: 17            # 17 blocks + 864 width hits the ~195M param target perfectly
+n_blocks: 18            # 18 blocks + 864 width hits the ~195M param target perfectly
 
 # -------------------------
 # Attention (GQA)
