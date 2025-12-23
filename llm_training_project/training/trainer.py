@@ -33,7 +33,9 @@ def train_on_shard(
         inputs, targets = batch
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
-
+        # Because config get string i needed to convert it
+        if isinstance(dtype, str):
+            dtype = getattr(torch, dtype)
         # 1. Forward pass with dynamic dtype
         with autocast(device_type=device.type, dtype=dtype):
             logits = model(inputs)
