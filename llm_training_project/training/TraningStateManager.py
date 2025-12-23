@@ -152,7 +152,9 @@ class TrainingStateManager:
             )
 
             state["global_step"] = global_step
+            state["wandb_run_id"] = checkpoint_info["wandb_run_id"]
             print(f"[TrainingStateManager] Loaded checkpoint at global step {global_step}.")
         else:
             print("[TrainingStateManager] No checkpoint found, starting fresh training state.")
+            state["wandb_run_id"] = None
         return state
