@@ -133,7 +133,7 @@ def main():
                 scheduler = model_states["scheduler"],
                 scaler = model_states["scaler"],
                 global_step = model_states["global_step"],
-                wandb_run_id = wandb.run.id if wandb.run else None
+                wandb_run_id = wandb.run.id if wandb.run else None,
                 name = f"checkpoints_at_step_{model_states['global_step']}"       
             )
 
@@ -154,6 +154,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
