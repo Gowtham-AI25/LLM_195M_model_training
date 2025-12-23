@@ -57,7 +57,7 @@ def main():
     )
 
     # Load or create training state
-    model_states = state_manager.load_training_state(model_class=LLM, local_rank=local_rank)
+    model_states = state_manager.load_training_state(model_cls=LLM, local_rank=local_rank)
 
     for _ in range(len(shard_manager.shard_files)):
         
@@ -125,4 +125,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
