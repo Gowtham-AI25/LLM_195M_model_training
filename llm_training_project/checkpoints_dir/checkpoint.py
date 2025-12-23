@@ -34,6 +34,7 @@ class CheckpointManager:
             scheduler,
             scaler,
             global_step: int,
+            wandb_run_id: str = None,
             name: str = "checkpoint",
     ):
         """
@@ -61,6 +62,7 @@ class CheckpointManager:
             "scheduler_state_dict": scheduler.state_dict(),
             "scaler_state_dict": scaler.state_dict(),
             "global_step": global_step,
+            "wandb_run_id": wandb_run_id,
         }
         
         # Save to temporary file first then rename (atomic save) to prevent corruption
@@ -100,7 +102,10 @@ class CheckpointManager:
         scheduler.load_state_dict(state["scheduler_state_dict"])
         scaler.load_state_dict(state["scaler_state_dict"])
 
-        return state.get("global_step", 0)
+        return {
+            "global_step": state.get("global_step", 0),
+            "wandb_run_id": state.get("wandb_run_id", None)
+        }
     
     
 
