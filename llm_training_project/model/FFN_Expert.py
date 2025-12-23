@@ -17,7 +17,7 @@ class Expert_GPU_Optimized(nn.Module):
         self.emb_dim = config.emb_dim
         # FFN hidden dim for W1/W3 is calculated as: 4 * emb_dim * 2/3 (then often rounded up)
         # For simplicity, we use config.ffn_hidden_dim as the HALF size (Dh/2)
-        self.ffn_half_dim = config.ffn_half_dim 
+        self.ffn_half_dim = config.ffn_hidden_dim 
         self.n_layers = config.n_blocks
         self.bias = getattr(config, 'bias', False) # LLaMA models use bias=False
 
@@ -25,12 +25,12 @@ class Expert_GPU_Optimized(nn.Module):
         # Input: (B, T, D_emb) -> Output: (B, T, 2 * Dh/2) -> (B, T, D_ffn_hidden)
         self.w1_w3_fused = nn.Linear(
             self.emb_dim, 
-            2 * self.ffn_half_dim, 
+            self.ffn_hidden_dim, 
             bias=self.bias
         )
         
         # W2: Down-projection back to model dimension
-        self.w2 = nn.Linear(self.ffn_half_dim, self.emb_dim, bias=self.bias)
+        self.w2 = nn.Linear(self.ffn_hidden_dim//2, self.emb_dim, bias=self.bias)
 
         self._init_weights()
 
@@ -76,7 +76,7 @@ class Expert_naive(nn.Module):
         super().__init__()
 
         self.emb_dim = config.emb_dim
-        self.ffn_hidden_dim = config.ffn_hidden_dim
+        self.ffn_hidden_dim = config.ffn_half_dim
         self.dropout_rate = config.dropout_rate
         self.bias = config.bias
         self.n_layers = config.n_blocks

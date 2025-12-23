@@ -7,8 +7,7 @@ n_blocks: 2             # Reduced from 24 (Huge memory saver)
 max_seq_len: 128        # Reduced from 2,048
 
 # --- FFN Configuration (SwiGLU) ---
-# Keeping the ratio, but making it tiny
-ffn_half_dim: 256       
+ffn_hidden_dim: 256       
 
 # --- Attention / RoPE Configuration ---
 num_q_heads: 4          # Must be divisible by num_kv_heads for GQA

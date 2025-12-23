@@ -9,10 +9,10 @@ class TensorBoardLogger:
 
         self.histogram_param_names = [
             "tok_embeddings.weight",
-            "layers.0.self_attn.q_proj.weight",
-            "layers.0.self_attn.out_proj.weight",
-            "layers.0.mlp.up_proj.weight",
-            "layers.0.mlp.down_proj.weight",
+            "transformer_blocks.0.self_attn.q_proj.weight",
+            "transformer_blocks.0.self_attn.out_proj.weight",
+            "transformer_blocks.0.ffn.w1_w3_fused.weight",
+            "transformer_blocks.0.ffn.w2.weight",
             "lm_head.weight",
         ]
 
@@ -69,7 +69,7 @@ class TensorBoardLogger:
         self.writer.add_scalar('Diagnostics/Step_Size', step_size, step)
         self.writer.add_scalar('Diagnostics/Weight_Decay_Effect', weight_decay, step)
 
-    def log_histogram(self,
+    def log_histograms(self,
                       step: int,
                       model: torch.nn.Module
                     ) -> None:
@@ -107,7 +107,7 @@ class TensorBoardLogger:
                             loss: float,
                             perplexity: float,
                             lr: float,
-                            gard_scale: float,
+                            grad_scale: float,
                             grad_norm: float
                         ) -> None:
         """
@@ -121,14 +121,14 @@ class TensorBoardLogger:
 
             All values are final processed values for the current step.
         """
-        max_gard_norm = grad_norm
-        clip_ratio = min(1.0, max_gard_norm / (grad_norm + 1e-6))
+        max_grad_norm = grad_norm
+        clip_ratio = min(1.0, max_grad_norm / (grad_norm + 1e-6))
         # main metrics logging
         self.writer.add_scalar('Tranining/Loss', loss, step)
         self.writer.add_scalar('Training/Perplexity', perplexity, step)
         self.writer.add_scalar('Training/lr', lr, step)
         # amp health metrics logging
-        self.writer.add_scalar('Training/Grad_Scaler', gard_scale, step)   
+        self.writer.add_scalar('Training/Grad_Scaler', grad_scale, step)   
         self.writer.add_scalar('Training/Grad_Norm', grad_norm, step) 
         self.writer.add_scalar('Training/Grad_Clip_Ratio', clip_ratio, step)
                             

@@ -14,7 +14,7 @@ class LLM_model_config(BaseModel):
     max_seq_len: int = Field(2048, gt=0, description="The maximum sequence length (T).")
 
     # --- FFN Configuration ---
-    ffn_half_dim: int = Field(..., gt=0, description='FFN hidden dimension for SwiGLU (Dh/2).')
+    ffn_hidden_dim: int = Field(..., gt=0, description='FFN hidden dimension for SwiGLU (Dh/2).')
 
     # --- Attention/RoPE Configuration ---
     num_q_heads: int = Field(..., gt=0, description="Number of Query heads (Hq).")

@@ -14,4 +14,4 @@ class RMSNorm(nn.Module):
         # Optimized: torch.rsqrt for fused hardware op
         x_normed = x * torch.rsqrt(norm + self.eps)
         # Optimized: Explicit view for clearer broadcasting to compiler
-        return x_normed * self.weight.view(1, 1, -1)
+        return x_normed * self.weight

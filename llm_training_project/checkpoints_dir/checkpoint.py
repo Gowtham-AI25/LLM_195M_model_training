@@ -21,6 +21,11 @@ class CheckpointManager:
         path = self.checkpoint_path(name)
         return path.exists()
     
+    def reload(self) -> None:
+        """Reload the shard list from the JSON file to sync with disk updates.
+           with this after every shard remove we update shard_file list in all ranks"""
+        self.shard_files = self._load_shard_files()
+    
     def save_checkpoint(
             self,
             *,

@@ -11,140 +11,90 @@ def train_on_shard(
         criterion: torch.nn.CrossEntropyLoss,  
         device: torch.device,
         scaler: torch.cuda.amp.GradScaler,
-        start_global_step: int,
+        start_global_step: int, 
         max_grad_norm: float,
         gradient_accumulation_steps: int = 25,
         writer = None,
         rank: int = 0,
+        dtype: torch.dtype = torch.float16 # Use dynamic dtype from config
     ):
-    """
-        Train the model on a single data shard for one epoch.
-
-        Args:
-            model (torch.nn.Module): The model to be trained.
-            dataloader (torch.utils.data.DataLoader): DataLoader for the shard.
-            optimizer (torch.optim.Optimizer): Optimizer for updating model parameters.
-            sheduler: Learning rate scheduler.
-            device (torch.device): Device to perform training on.
-            scaler (torch.cuda.amp.GradScaler): Gradient scaler for mixed precision training.
-            max_grad_norm (float): Maximum gradient norm for clipping.
-
-        Returns:
-            Dict[str, float]: Dictionary containing average loss and number of batchs.
-    """
-    # Set model to training mode
     model.train()
-    # Initialize gradients to zero at the start of the shard training
     optimizer.zero_grad(set_to_none=True)
 
     total_raw_loss = 0.0
-    num_micro_batchs = 0
+    num_micro_batches = 0
     global_step = start_global_step
-    total_batch_loss = 0.0
+    
+    # Track loss for the current accumulation cycle
+    accum_loss = 0.0
+    num_batches = len(dataloader)
 
     for batch_idx, batch in enumerate(dataloader):
-
         inputs, targets = batch
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
 
-        # ---------- Forward pass with mixed precision ----------
-
-        with autocast(device_type = device.type, dtype = torch.float16):
+        # 1. Forward pass with dynamic dtype
+        with autocast(device_type=device.type, dtype=dtype):
             logits = model(inputs)
-
-            raw_loss = criterion(
-                logits.view(-1, logits.size(-1)),
-                targets.view(-1)
-            )
-
+            raw_loss = criterion(logits.view(-1, logits.size(-1)), targets.view(-1))
+            # Scale by actual steps to be safe if final batch is partial
             scaled_loss = raw_loss / gradient_accumulation_steps 
 
-
-        # --------- is current step is  gradient accumulation step? ----------
+        # 2. Backward pass
         is_accum_step = (batch_idx + 1) % gradient_accumulation_steps == 0
+        is_final_batch = (batch_idx + 1) == num_batches
 
-        if not is_accum_step:
-            # Scale loss and call backward (no optimizer step yet)
+        if not (is_accum_step or is_final_batch):
             with model.no_sync():
                 scaler.scale(scaled_loss).backward()
         else:
-            # Scale loss and call backward (no optimizer step yet)
             scaler.scale(scaled_loss).backward()
 
-        # ---------- collect raw loss for logging ----------
+        # Stats tracking
+        raw_loss_val = raw_loss.item()
+        accum_loss += raw_loss_val
+        total_raw_loss += raw_loss_val
+        num_micro_batches += 1
 
-        total_batch_loss += raw_loss.item()
-        raw_loss_value = raw_loss.item()
-        total_raw_loss += raw_loss_value
-        num_micro_batchs += 1
+        # 3. Optimization Step (Triggered every 25 micro-batches OR at end of shard)
+        if is_accum_step or is_final_batch:
+            scaler.unscale_(optimizer)
+            
+            # Compute grad_norm outside diagnostic block to avoid NameError
+            grad_norm = clip_grad_norm_(model.parameters(), max_grad_norm).item()
 
-        # ---------- Gradient accumulation step ----------
+            # 4. Diagnostic Logging (End of Shard: 100th step)
+            if rank == 0 and writer is not None:
+                if global_step % 100 == 0:
+                    writer.log_histograms(step=global_step, model=model)
+                    writer.log_diagnostics(step=global_step, model=model, optimizer=optimizer)
 
-        if not is_accum_step:
-            continue
-
-        # Unscale gradients before clipping
-        scaler.unscale_(optimizer)
- 
-        # Clip gradients to prevent exploding gradients
-        grad_norm = clip_grad_norm_(
-            model.parameters(),
-            max_grad_norm
-        ).item()
-
-        if rank == 0 and global_step % 100 == 0 and writer is not None:
-
-            writer.log_histograms(
-                step=global_step,
-                model=model
-            )
-
-            writer.log_diagnostics(
-                step=global_step,
-                model=model,
-                optimizer=optimizer
-            )
-
-
-
-        # optimize the model parameters
-        scaler.step(optimizer)
-        scaler.update()
-        optimizer.zero_grad(set_to_none=True)
-
-        scheduler.step()
-        global_step += 1
-
-        # ---------- Logging ----------
-        avg_batch_loss = total_batch_loss / gradient_accumulation_steps
-        total_batch_loss = 0.0
-        # 1 Perplexity (numerically safe)
-        perplexity = math.exp(avg_batch_loss) if avg_batch_loss < 20 else float("inf")
-        # 2 Learning rate (current step)
-        lr = optimizer.param_groups[0]["lr"]
-        # 3 AMP gradient scaler value
-        grad_scale = scaler.get_scale()
-
-        if rank == 0 and writer is not None:
-            writer.log_training_metric(
-                step=global_step,
-                loss=avg_batch_loss,
-                perplexity = perplexity,
-                lr = lr,
-                grad_scale = grad_scale,
-                grad_norm = grad_norm,
-            )
-            print(f"Step {global_step}: Loss={raw_loss_value:.6f}, Perplexity={perplexity:.6f}, LR={lr:.6e}")
+                # 5. Regular Metric Logging (Every step)
+                avg_step_loss = accum_loss / ( (batch_idx % gradient_accumulation_steps) + 1 )
+                perplexity = math.exp(avg_step_loss) if avg_step_loss < 20 else float("inf")
+                
+                writer.log_training_metric(
+                    step=global_step,
+                    loss=avg_step_loss,
+                    perplexity=perplexity,
+                    lr=optimizer.param_groups[0]["lr"],
+                    gard_scale=scaler.get_scale(), # Matches logger parameter name
+                    grad_norm=grad_norm
+                )
+            
+            # 6. Weights update
+            scaler.step(optimizer)
+            scaler.update()
+            optimizer.zero_grad(set_to_none=True)
+            scheduler.step()
+            
+            # Reset accumulation trackers
+            accum_loss = 0.0
+            global_step += 1
 
     return {
         "global_step": global_step,
         "total_loss": total_raw_loss,
-        "num_micro_batchs": num_micro_batchs
+        "num_micro_batches": num_micro_batches
     }
-
-
-                                           
-
-
-
