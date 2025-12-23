@@ -75,7 +75,8 @@ def train_on_shard(
                 # 5. Regular Metric Logging (Every step)
                 avg_step_loss = accum_loss / ( (batch_idx % gradient_accumulation_steps) + 1 )
                 perplexity = math.exp(avg_step_loss) if avg_step_loss < 20 else float("inf")
-                
+
+                print(f"Step {global_step} | Loss: {avg_step_loss:.4f} | Perplexity: {perplexity:.2f} | LR: {optimizer.param_groups[0]['lr']:.6f}", flush=True)
                 writer.log_training_metric(
                     step=global_step,
                     loss=avg_step_loss,
