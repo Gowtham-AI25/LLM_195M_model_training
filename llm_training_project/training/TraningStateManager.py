@@ -144,14 +144,14 @@ class TrainingStateManager:
         if self.checkpoint_manager.checkpoint_exists():
             print("[TrainingStateManager] Loading training state from checkpoint...")
             # load checkpoint from manager
-            global_step = self.checkpoint_manager.load_checkpoint(
+            checkpoint_info = self.checkpoint_manager.load_checkpoint(
                 model=state["model"],
                 optimizer=state["optimizer"],
                 scheduler=state["scheduler"],
                 scaler=state["scaler"],
             )
 
-            state["global_step"] = global_step
+            state["global_step"] = checkpoint_info['global_step']
             state["wandb_run_id"] = checkpoint_info["wandb_run_id"]
             print(f"[TrainingStateManager] Loaded checkpoint at global step {global_step}.")
         else:
