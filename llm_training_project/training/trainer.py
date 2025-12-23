@@ -2,6 +2,7 @@ import torch
 from torch.nn.utils import clip_grad_norm_
 from torch.amp import autocast
 import math
+import wandb
 
 def train_on_shard(
         model: torch.nn.Module,
@@ -77,6 +78,16 @@ def train_on_shard(
                 perplexity = math.exp(avg_step_loss) if avg_step_loss < 20 else float("inf")
 
                 print(f"Step {global_step} | Loss: {avg_step_loss:.4f} | Perplexity: {perplexity:.2f} | LR: {optimizer.param_groups[0]['lr']:.6f}", flush=True)
+
+                if wandb.run is not None:
+                    wandb.log({
+                        "performance/loss": avg_step_loss,
+                        "performance/perplexity": perplexity,
+                        "performance/learning_rate": optimizer.param_groups[0]["lr"],
+                        "system/grad_norm": grad_norm,
+                        "system/grad_scale": scaler.get_scale()
+                    }, step=global_step)
+                        
                 writer.log_training_metric(
                     step=global_step,
                     loss=avg_step_loss,
