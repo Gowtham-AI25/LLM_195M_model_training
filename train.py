@@ -63,9 +63,9 @@ def main():
     model_states = state_manager.load_training_state(model_cls=LLM, local_rank=local_rank)
 
     for _ in range(len(shard_manager.shard_files)):
-        shard_file = shard_manager.get_next_shard()
+        shard_url = shard_manager.get_next_shard()
 
-        parts = shard_file.split("/")
+        parts = shard_url.split("/")
         relative_path = os.path.join(parts[-2], parts[-1])  # tokens/batch_0002.pt
         
         file_local_path = os.path.join(
@@ -142,6 +142,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
