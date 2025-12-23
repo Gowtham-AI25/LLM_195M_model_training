@@ -67,7 +67,8 @@ class SingleShardDataset(Dataset):
         Returns:
             torch.Tensor: The sequence at the specified index.
         """
-        return self.data[idx]   
+        sequence = self.data[idx]
+        return sequence[:-1], sequence[1:]
         
 
 
