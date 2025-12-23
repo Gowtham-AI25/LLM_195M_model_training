@@ -69,6 +69,8 @@ class LLM_training_config(BaseModel):
 
     # New: Evaluation during training
     eval_every_steps: int = Field(100, gt=0, description="Run evaluation on a validation set.")
+    # Add this field to the LLM_training_config class in llm_training_project/config/train_config.py
+    wandb_run_id: Optional[str] = Field(None, description="The unique ID of the W&B run to resume.")
     
     # New: Directories
     checkpoint_path: str = Field( ..., description="Full path to the model checkpoint file.")
