@@ -17,7 +17,7 @@ class Expert_GPU_Optimized(nn.Module):
         self.emb_dim = config.emb_dim
         # FFN hidden dim for W1/W3 is calculated as: 4 * emb_dim * 2/3 (then often rounded up)
         # For simplicity, we use config.ffn_hidden_dim as the HALF size (Dh/2)
-        self.ffn_half_dim = config.ffn_hidden_dim 
+        self.ffn_hidden_dim = config.ffn_hidden_dim 
         self.n_layers = config.n_blocks
         self.bias = getattr(config, 'bias', False) # LLaMA models use bias=False
 
