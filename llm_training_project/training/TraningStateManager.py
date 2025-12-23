@@ -1,7 +1,7 @@
 import torch 
 from torch.optim import AdamW
 from torch.amp import GradScaler
-from llm_training_project.checkpoints.checkpoint import CheckpointManager
+from llm_training_project.checkpoints_dir.checkpoint import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config
 from llm_training_project.config.model_config import LLM_model_config
 from llm_training_project.utils.Scheduler import Scheduler_4phase

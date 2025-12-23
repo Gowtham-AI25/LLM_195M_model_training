@@ -1,5 +1,6 @@
 import torch 
 import torch.distributed as dist
+import os
 
 def setup_distributed():
     dist.init_process_group(backend='nccl')

@@ -1,11 +1,11 @@
 import torch 
 from llm_training_project.training.TraningStateManager import TrainingStateManager
-from llm_training_project.checkpoints.checkpoint import CheckpointManager
+from llm_training_project.checkpoints_dir.checkpoint import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config
 from llm_training_project.config.model_config import LLM_model_config
 from llm_training_project.utils.HF_utils import HFUtils
 from llm_training_project.training.trainer import train_on_shard
-from llm_training_project.training.tensorboard_logger import TensorBoardLogger
+from llm_training_project.log.tensorboard_logger import TensorBoardLogger
 from llm_training_project.shards.ShardManager import ShardManager
 from llm_training_project.dataloader.DataLoader import get_dataloader
 from llm_training_project.utils.distributed import setup_distributed, cleanup_distributed
@@ -33,10 +33,12 @@ def main():
         json_path = train_config.shard_manager_json_path
     )
 
-    # tensorboard logger
-    tb_logger = TensorBoardLogger(
-        log_dir = train_config.tensorboard_log_dir
-    )
+    tb_logger = None
+    if rank == 0:
+        # tensorboard logger
+        tb_logger = TensorBoardLogger(
+            log_dir = train_config.tensorboard_log_dir
+        )
 
     # initializ TrainingStateManager to get model, optimizer, scaler, scheduler, etc.
     state_manager = TrainingStateManager(
@@ -46,25 +48,25 @@ def main():
         device = device
     )
 
-    hf_api = HFUtils()
+    hf_api = HFUtils.load_config_from_yaml("llm_training_project/config/configs/hf_config.yaml")
 
-    shard_file = shard_manager.get_next_shard()
-    
-    file_local_path = hf_api.download_shard(
-        hf_shard_path = shard_file,
-        local_dir = train_config.data_dir
-    )
     # Load or create training state
     model_states = state_manager.load_training_state(LLM)
 
-
     for _ in range(len(shard_manager.shard_files)):
+        
+        shard_file = shard_manager.get_next_shard()
+    
+        file_local_path = hf_api.download_shard(
+            hf_shard_path = shard_file,
+            local_dir = train_config.dataset_dir
+        )
 
         dataloader = get_dataloader(
             shard_file = file_local_path,
             batch_size = train_config.batch_size_per_device,
-            world_size = train_config.num_devices,
-            rank = dist.get_rank() if train_config.num_devices > 1 else None,
+            world_size = world_size,
+            rank = rank if world_size > 1 else 0,
             num_workers = train_config.num_workers,
             validate = True
         )
@@ -87,8 +89,8 @@ def main():
         model_states["global_step"] = shard_stats["global_step"]
 
         if rank == 0:
-
             print(f"Finished training a single shard : {shard_stats}")
+
             # Save checkpoint after each shard
             checkpoint_manager.save_checkpoint(
                 model = model_states["model"],
@@ -96,19 +98,20 @@ def main():
                 scheduler = model_states["scheduler"],
                 scaler = model_states["scaler"],
                 global_step = model_states["global_step"],
-                name = f"checkpoints_at_step_{model_states['global_step']}"            
+                name = f"checkpoints_at_step_{model_states['global_step']}"       
             )
 
-        if train_config.num_devices > 1:
+        if world_size> 1:
             dist.barrier()
         
         if rank == 0:
             shard_file = shard_manager.remove_shard()
             print(f"Removed shard file {shard_file} from shard manager.")
         
-        if train_config.num_devices > 1:
+        if world_size > 1:
             dist.barrier()
-        
+
+    if world_size > 1: 
         cleanup_distributed()
 
 if __name__ == "__main__":

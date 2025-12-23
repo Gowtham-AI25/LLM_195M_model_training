@@ -59,8 +59,17 @@ def train_on_shard(
 
             scaled_loss = raw_loss / gradient_accumulation_steps 
 
-        # ---------- Backward pass with gradient scaling ----------
-        scaler.scale(scaled_loss).backward()
+
+        # --------- is current step is  gradient accumulation step? ----------
+        is_accum_step = (batch_idx + 1) % gradient_accumulation_steps == 0
+
+        if not is_accum_step:
+            # Scale loss and call backward (no optimizer step yet)
+            with model.no_sync():
+                scaler.scale(scaled_loss).backward()
+        else:
+            # Scale loss and call backward (no optimizer step yet)
+            scaler.scale(scaled_loss).backward()
 
         # ---------- collect raw loss for logging ----------
 
@@ -70,7 +79,7 @@ def train_on_shard(
 
         # ---------- Gradient accumulation step ----------
 
-        if (batch_idx + 1) % gradient_accumulation_steps != 0:
+        if not is_accum_step:
             continue
 
         # Unscale gradients before clipping
