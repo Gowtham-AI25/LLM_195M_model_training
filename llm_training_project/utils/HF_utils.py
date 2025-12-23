@@ -95,8 +95,8 @@ class HFUtils:
 
     def download_hf_file_from_url(
         self,
-        hf_shard_path: str,
-        local_dir: str
+        file_url: str,
+        local_datasetdir: str
     ) -> str:
         """
         Download a single Hugging Face file using a direct `resolve/main/...` URL.
