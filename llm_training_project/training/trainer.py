@@ -16,7 +16,7 @@ def train_on_shard(
         gradient_accumulation_steps: int = 25,
         writer = None,
         rank: int = 0,
-        dtype: torch.dtype = torch.float16 # Use dynamic dtype from config
+        dtype: torch.dtype = None # Use dynamic dtype from config
     ):
     model.train()
     optimizer.zero_grad(set_to_none=True)
