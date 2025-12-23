@@ -64,8 +64,8 @@ def main():
         shard_file = shard_manager.get_next_shard()
 
         file_local_path = hf_api.download_hf_file_from_url(
-            hf_shard_path = shard_file,
-            local_dir = train_config.dataset_dir
+            file_url = shard_file,
+            local_datasetdir = train_config.dataset_dir
         )
 
         dataloader = get_dataloader(
@@ -125,5 +125,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
