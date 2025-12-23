@@ -81,7 +81,7 @@ def train_on_shard(
                     loss=avg_step_loss,
                     perplexity=perplexity,
                     lr=optimizer.param_groups[0]["lr"],
-                    gard_scale=scaler.get_scale(), # Matches logger parameter name
+                    grad_scale=scaler.get_scale(), # Matches logger parameter name
                     grad_norm=grad_norm
                 )
             
