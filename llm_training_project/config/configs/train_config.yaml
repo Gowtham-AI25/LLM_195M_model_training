@@ -30,10 +30,10 @@ optim_eps: 1.0e-8
 scheduler_type: CosineAnnealingWithWarmup
 min_lr_ratio: 0.1
 
-warmup_steps: 1000
-plateau_steps: 1500
-decay_steps: 25000
-anneal_steps: 2500
+warmup_steps: 500
+plateau_steps: 750
+decay_steps: 12500
+anneal_steps: 1250
 
 # =========================
 # 4. Data Loader
