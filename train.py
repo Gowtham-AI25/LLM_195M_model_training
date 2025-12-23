@@ -62,7 +62,7 @@ def main():
     for _ in range(len(shard_manager.shard_files)):
         shard_file = shard_manager.get_next_shard()
 
-        parts = shard_url.split("/")
+        parts = shard_file.split("/")
         relative_path = os.path.join(parts[-2], parts[-1])  # tokens/batch_0002.pt
         
         file_local_path = os.path.join(
@@ -139,6 +139,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
