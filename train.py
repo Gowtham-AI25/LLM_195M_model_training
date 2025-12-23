@@ -1,4 +1,7 @@
 import torch 
+import os
+from pathlib import Path
+import torch.distributed as dist
 from llm_training_project.training.TraningStateManager import TrainingStateManager
 from llm_training_project.checkpoints_dir.checkpoint import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config, update_config_paths
@@ -10,8 +13,8 @@ from llm_training_project.shards.ShardManager import ShardManager
 from llm_training_project.dataloader.DataLoader import get_dataloader
 from llm_training_project.utils.distributed import setup_distributed, cleanup_distributed
 from llm_training_project.model.model import LLM
-import torch.distributed as dist
-from pathlib import Path
+
+
 
 def main():
     # Detect the directory where train.py is located
@@ -139,6 +142,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
