@@ -35,6 +35,7 @@ def main():
     
     user_secrets = UserSecretsClient()
     hf_api.hf_token = user_secrets.get_secret("hf_access_token")
+    hf_api.load_checkpoint_from_hf(train_config.checkpoint_dir)
 
     local_rank = setup_distributed()
     rank = dist.get_rank() if train_config.num_devices > 1 else 0
@@ -169,6 +170,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
