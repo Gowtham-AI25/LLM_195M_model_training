@@ -57,41 +57,46 @@ class HFUtils:
             
             print(f"[HFUtils] ✅ Successfully uploaded {path.name} to Hugging Face.")
 
+
     # --- 2. CHECKPOINT LOAD (HF → LOCAL) --
     def load_checkpoint_from_hf(
         self,
         local_checkpoint_dir: str = "llm_training_project/checkpoints_dir"
     ) -> str:
         """
-        Download a single checkpoint file from Hugging Face to a local directory.
-        Args:
-            local_checkpoint_dir (str): Local directory to save the checkpoint. 
-        Returns:
-            str: Path to the downloaded checkpoint file.
+        Download a single checkpoint file from Hugging Face (via HF cache)
+        and place it into a clean local working directory.
+    
+        Final path:
+        <local_checkpoint_dir>/checkpoints/checkpoint.pt
         """
-        # -------------------------------
-        # 1. Prepare local directory
-        # -------------------------------
-        local_dir = Path(local_checkpoint_dir)
-        local_dir.mkdir(parents=True, exist_ok=True)
-        # -------------------------------
-        # 2. HF repo-relative file path
-        # -------------------------------
-        repo_file_path = self.hf_checkpoint_dir.strip("/")  
+        final_ckpt_dir = Path(local_checkpoint_dir) / "checkpoints"
+        final_ckpt_dir.mkdir(parents=True, exist_ok=True)
+    
+        final_ckpt_path = final_ckpt_dir / "checkpoint.pt"
+        repo_file_path = self.hf_checkpoint_dir.strip("/")
+    
         print(f"[HFUtils] Downloading '{repo_file_path}' from Hugging Face...")
-        # -------------------------------
-        # 3. Download EXACT file
-        # -------------------------------
-        local_path = hf_hub_download(
+    
+        # ------------------------------------------------
+        # 3. Download via HF cache (immutable)
+        # ------------------------------------------------
+        cached_path = hf_hub_download(
             repo_id=self.checkpoint_repo_id,
             filename=repo_file_path,
-            local_dir=str(local_dir),
+            repo_type=self.checkpoint_repo_type,
             token=self.hf_token,
-            force_download=False
+            force_download=False,
         )
+    
+        if not final_ckpt_path.exists():
+            print("[HFUtils] Copying checkpoint to working directory...")
+            shutil.copy2(cached_path, final_ckpt_path)
+    
+        print(f"[HFUtils] Checkpoint ready at: {final_ckpt_path}")
+    
+        return str(final_ckpt_path)
 
-        print(f"[HFUtils] Downloading completed file saved at {local_path}")
-        return str(local_path)
 
 
     # --- 3. DATASET LOAD (HF → LOCAL) ---
