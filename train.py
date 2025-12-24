@@ -153,15 +153,27 @@ def main():
             dist.barrier()
         
         shard_manager.reload()  # reload shard list after removal in all ranks
-
-        is_continue = input("Continue training? (y/n): ")
-        if is_continue.lower() != 'y':
+        
+        continue_flag = torch.tensor(1, device=device)
+        if rank == 0:
+            user_input = input("Continue training? (y/n): ")
+            if user_input.lower() != "y":
+                continue_flag.fill_(0)
+        # Share decision with all ranks
+        if world_size > 1:
+            dist.broadcast(continue_flag, src=0)
+        # All ranks obey the same decision
+        if continue_flag.item() == 0:
+            if rank == 0:
+                print("Stopping training on all GPUs.")
             break
+            
     if world_size > 1: 
         cleanup_distributed()
 
 if __name__ == "__main__":
     main()
+
 
 
 
