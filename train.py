@@ -127,7 +127,7 @@ def main():
             print(f"Finished training a single shard : {shard_stats}")
 
             # Save checkpoint after each shard
-            checkpoint_manager.save_checkpoint(
+            local_ckpt_path = checkpoint_manager.save_checkpoint(
                 model = model_states["model"],
                 optimizer = model_states["optimizer"],
                 scheduler = model_states["scheduler"],
@@ -136,6 +136,7 @@ def main():
                 wandb_run_id = wandb.run.id if wandb.run else None,
                 name = f"checkpoints_at_step_{model_states['global_step']}"       
             )
+            hf_api.save_checkpoint_to_hf( checkpoint_path = local_ckpt_path, commit_message = "ckpt_saved"
 
         if world_size> 1:
             dist.barrier()
@@ -157,6 +158,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
