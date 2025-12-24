@@ -5,8 +5,8 @@
 # =========================
 # 1. Training Loop
 # =========================
-total_training_steps: 500
-accumulation_steps: 5
+total_training_steps: 15000
+accumulation_steps: 10
 max_grad_norm: 1.0
 
 # Device & Distributed
@@ -30,17 +30,17 @@ optim_eps: 1.0e-8
 scheduler_type: CosineAnnealingWithWarmup
 min_lr_ratio: 0.1
 
-warmup_steps: 25
-plateau_steps: 50
-decay_steps: 400
-anneal_steps: 25
+warmup_steps: 600
+plateau_steps: 2400
+decay_steps: 11000
+anneal_steps: 1000
 
 # =========================
 # 4. Data Loader
 # =========================
 
 block_size: 1024
-batch_size: 4
+batch_size: 10
 num_workers: 4
 pin_memory: true
 
