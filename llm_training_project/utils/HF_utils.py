@@ -60,7 +60,7 @@ class HFUtils:
     # --- 2. CHECKPOINT LOAD (HF → LOCAL) --
     def load_checkpoint_from_hf(
         self,
-        local_checkpoint_dir: str = "llm_training_project/checkpoints"
+        local_checkpoint_dir: str = "llm_training_project/checkpoints_dir"
     ) -> str:
         """
         Download a single checkpoint file from Hugging Face to a local directory.
