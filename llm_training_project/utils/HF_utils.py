@@ -3,6 +3,7 @@ from typing import Optional
 from pathlib import Path
 from huggingface_hub import hf_hub_download, upload_file
 from urllib.parse import urlparse
+import shutil
 
 class HFUtils:
     def __init__(
