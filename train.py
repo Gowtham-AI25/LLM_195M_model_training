@@ -147,7 +147,7 @@ def main():
         if world_size > 1:
             dist.barrier()
         
-        checkpoint_manager.reload()  # reload shard list after removal in all ranks
+        shard_manager.reload()  # reload shard list after removal in all ranks
 
         is_continue = input("Continue training? (y/n): ")
         if is_continue.lower() != 'y':
@@ -157,6 +157,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
