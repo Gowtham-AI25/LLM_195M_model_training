@@ -52,8 +52,11 @@ class HFUtils:
                 repo_id=self.checkpoint_repo_id,
                 repo_type=self.checkpoint_repo_type,
                 token=self.hf_token,
-                commit_message=commit_message
+                commit_message=commit_message,
+                print_report=False
             )
+            
+            print(f"[HFUtils] ✅ Successfully uploaded {path.name} to Hugging Face.
 
     # --- 2. CHECKPOINT LOAD (HF → LOCAL) --
     def load_checkpoint_from_hf(
