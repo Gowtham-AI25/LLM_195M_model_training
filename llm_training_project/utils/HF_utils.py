@@ -58,7 +58,7 @@ class HFUtils:
                 print_report=False
             )
             
-            print(f"[HFUtils] ✅ Successfully uploaded {path.name} to Hugging Face.
+            print(f"[HFUtils] ✅ Successfully uploaded {path.name} to Hugging Face.")
 
     # --- 2. CHECKPOINT LOAD (HF → LOCAL) --
     def load_checkpoint_from_hf(
