@@ -158,7 +158,7 @@ def main():
         shard_manager.reload()  # reload shard list after removal in all ranks
         
         # All ranks obey the same decision
-        if should_stop_from_wandb(rank, world_size, device):
+        if should_stop_from_hf(rank, world_size, device):
             if rank == 0:
                 print("Stopping training as requested via W&B 'stop_training' signal.")
             break
@@ -168,6 +168,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
