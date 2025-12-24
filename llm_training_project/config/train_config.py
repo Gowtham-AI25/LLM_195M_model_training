@@ -72,7 +72,6 @@ class LLM_training_config(BaseModel):
     # Add this field to the LLM_training_config class in llm_training_project/config/train_config.py
     
     # New: Directories
-    checkpoint_path: str = Field( ..., description="Full path to the model checkpoint file.")
     dataset_dir: str = Field(..., description="Directory where dataset shard files are stored.")
     checkpoint_dir: str = Field(..., description="Base directory for saving model checkpoints.")
     shard_manager_json_path: str = Field(..., description="Path to the JSON file listing dataset shard files.")
