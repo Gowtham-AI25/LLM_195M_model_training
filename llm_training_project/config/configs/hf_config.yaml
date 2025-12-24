@@ -1,5 +1,5 @@
 # Hugging Face Configuration
-hf_token: "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"  
+hf_token: "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"  
 
 # Repository IDs (Format: username/repo-name)
 checkpoint_repo_id: "gowthamgoli/LLM_training_checkpoints"
@@ -11,4 +11,5 @@ dataset_repo_type: "dataset"
 
 # hf Paths
 hf_checkpoint_dir: "checkpoints/checkpoint.pt"
+
 hf_dataset_dir: "tokens"
