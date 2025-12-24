@@ -60,7 +60,6 @@ eval_every_steps: 100
 # ========================= 
 # 7. Paths
 # =========================
-checkpoint_path: "llm_training_project/checkpoints_dir/checkpoints/checkpoint.pt"
 dataset_dir: "llm_training_project/shards"
 checkpoint_dir: "llm_training_project/checkpoints_dir/checkpoints"
 
