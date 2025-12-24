@@ -1,5 +1,6 @@
 import torch 
 import os
+import gc
 import wandb
 from pathlib import Path
 import torch.distributed as dist
@@ -127,6 +128,10 @@ def main():
 
         model_states["global_step"] = shard_stats["global_step"]
 
+        del dataloader
+        gc.collect()           # Clear Python's reference to objects
+        torch.cuda.empty_cache()
+
         if rank == 0:
             print(f"Finished training a single shard : {shard_stats}")
 
@@ -145,11 +150,6 @@ def main():
             
             shard_file = shard_manager.remove_shard()
             print(f"Removed shard file {shard_file} from shard manager.")
-
-        del dataloader
-        import gc
-        gc.collect()           # Clear Python's reference to objects
-        torch.cuda.empty_cache()
         
         if world_size> 1:
             dist.barrier()
@@ -167,6 +167,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
