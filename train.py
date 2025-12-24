@@ -1,5 +1,6 @@
-import torch 
 import os
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+import torch 
 import gc
 import wandb
 from pathlib import Path
@@ -168,6 +169,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
