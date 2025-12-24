@@ -35,12 +35,22 @@ def main():
     
     user_secrets = UserSecretsClient()
     hf_api.hf_token = user_secrets.get_secret("hf_access_token")
-    hf_api.load_checkpoint_from_hf(train_config.checkpoint_dir)
 
     local_rank = setup_distributed()
     rank = dist.get_rank() if train_config.num_devices > 1 else 0
     world_size = dist.get_world_size() if train_config.num_devices > 1 else 1
     device = torch.device(f"cuda:{local_rank}")
+
+    if world_size > 1:
+    dist.barrier()   # ensure all ranks reach this point together
+
+    if rank == 0:
+        print("[RANK 0] Downloading checkpoint from Hugging Face...")
+        hf_api.load_checkpoint_from_hf(train_config.checkpoint_dir)
+        print("[RANK 0] Checkpoint download complete.")
+    
+    if world_size > 1:
+        dist.barrier()   # wait until rank 0 finishes download
 
     # checkpoint manager
     checkpoint_manager = CheckpointManager(
@@ -170,6 +180,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
