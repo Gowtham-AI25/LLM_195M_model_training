@@ -2,8 +2,6 @@ import torch
 import torch.distributed as dist
 from huggingface_hub import HfApi
 
-# Initialize the API once outside the function
-hf_api_client = HfApi()
 
 def should_stop_from_hf(rank, world_size, device):
     """
@@ -11,6 +9,7 @@ def should_stop_from_hf(rank, world_size, device):
     - File exists -> Continue
     - File missing -> Stop
     """
+    hf_api_client = HfApi()
     REPO_ID = "gowthamgoli/llm_test_datarepo"
     FILENAME = "STOP_TRAINING"
     
