@@ -116,17 +116,11 @@ def update_config_paths(train_config, base_dir: Path):
     """
     # 1. Dataset Directory
     train_config.dataset_dir = str(base_dir / train_config.dataset_dir)
-
     # 2. Checkpoint Base Directory
     train_config.checkpoint_dir = str(base_dir / train_config.checkpoint_dir)
-
-    # 3. Full path to the model checkpoint file
-    train_config.checkpoint_path = str(base_dir / train_config.checkpoint_path)
-
-    # 4. Path to the JSON file listing dataset shard files
+    # 3. Path to the JSON file listing dataset shard files
     train_config.shard_manager_json_path = str(base_dir / train_config.shard_manager_json_path)
-
-    # 5. TensorBoard log directory
+    # 4. TensorBoard log directory
     train_config.tensorboard_log_dir = str(base_dir / train_config.tensorboard_log_dir)
 
     return train_config
