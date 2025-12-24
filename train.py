@@ -114,6 +114,7 @@ def main():
         # Synchronize all GPUs
         dist.barrier()
         
+        print(f"Next shard : {file_local_path}")
         dataloader = get_dataloader(
             shard_file = file_local_path,
             batch_size = train_config.batch_size,
@@ -180,6 +181,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
