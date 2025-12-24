@@ -146,6 +146,11 @@ def main():
             shard_file = shard_manager.remove_shard()
             print(f"Removed shard file {shard_file} from shard manager.")
 
+        del dataloader
+        import gc
+        gc.collect()           # Clear Python's reference to objects
+        torch.cuda.empty_cache()
+        
         if world_size> 1:
             dist.barrier()
         
@@ -162,6 +167,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
