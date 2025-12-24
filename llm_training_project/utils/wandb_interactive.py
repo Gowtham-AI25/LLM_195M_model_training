@@ -14,7 +14,7 @@ def should_stop_from_hf(rank, world_size, device):
     stop_flag = torch.tensor(0, device=device)
     if rank == 0:
         try:
-            r = requests.head(
+            r = requests.get(
                 CONTROL_URL,
                 allow_redirects=True, # Resolves the 307 Redirect issue
                 timeout=5,
