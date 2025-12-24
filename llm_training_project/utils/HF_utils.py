@@ -3,6 +3,7 @@ from typing import Optional
 from pathlib import Path
 from huggingface_hub import hf_hub_download, upload_file
 from urllib.parse import urlparse
+from huggingface_hub.utils import disable_progress_bars
 
 class HFUtils:
     def __init__(
@@ -39,6 +40,7 @@ class HFUtils:
             checkpoint_path: str,
             commit_message: str = "Upload checkpoint"
         ) -> None:
+            disable_progress_bars()
             path = Path(checkpoint_path)
             if not path.exists():
                 raise FileNotFoundError(f"Checkpoint file not found at {path}")
