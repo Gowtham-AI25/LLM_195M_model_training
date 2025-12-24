@@ -14,6 +14,7 @@ from llm_training_project.shards.ShardManager import ShardManager
 from llm_training_project.dataloader.DataLoader import get_dataloader
 from llm_training_project.utils.distributed import setup_distributed, cleanup_distributed
 from llm_training_project.model.model import LLM
+from kaggle_secrets import UserSecretsClient
 
 
 
@@ -28,6 +29,9 @@ def main():
     model_config = LLM_model_config.load_from_yaml(str(BASE_DIR / "llm_training_project/config/configs/model_config.yaml"))
     # Load the Hugging Face configuration
     hf_api = HFUtils.load_config_from_yaml( str(BASE_DIR / "llm_training_project/config/configs/hf_config.yaml"))
+    
+    user_secrets = UserSecretsClient()
+    hf_api.hf_token = user_secrets.get_secret("hf_access_token")
 
     local_rank = setup_distributed()
     rank = dist.get_rank() if train_config.num_devices > 1 else 0
@@ -158,6 +162,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
