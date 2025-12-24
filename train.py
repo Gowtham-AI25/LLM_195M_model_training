@@ -42,7 +42,7 @@ def main():
     device = torch.device(f"cuda:{local_rank}")
 
     if world_size > 1:
-    dist.barrier()   # ensure all ranks reach this point together
+        dist.barrier()   # ensure all ranks reach this point together
 
     if rank == 0:
         print("[RANK 0] Downloading checkpoint from Hugging Face...")
@@ -180,6 +180,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
