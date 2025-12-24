@@ -1,9 +1,9 @@
 # Hugging Face Configuration
-hf_token: "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"  
+hf_token: "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"  
 
 # Repository IDs (Format: username/repo-name)
 checkpoint_repo_id: "gowthamgoli/LLM_training_checkpoints"
-dataset_repo_id: "gowthamgoli/LLM_3B_tokens"
+dataset_repo_id: "gowthamgoli/llm_test_datarepo"
 
 # Repository Types
 checkpoint_repo_type: "model"

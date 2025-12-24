@@ -149,6 +149,9 @@ def main():
         
         checkpoint_manager.reload()  # reload shard list after removal in all ranks
 
+        is_continue = input("Continue training? (y/n): ")
+        if is_continue.lower() != 'y':
+            break
     if world_size > 1: 
         cleanup_distributed()
 
