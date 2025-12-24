@@ -13,7 +13,7 @@ from llm_training_project.log.tensorboard_logger import TensorBoardLogger
 from llm_training_project.shards.ShardManager import ShardManager
 from llm_training_project.dataloader.DataLoader import get_dataloader
 from llm_training_project.utils.distributed import setup_distributed, cleanup_distributed
-from llm_training_project.model.model import LLM
+from llm_training_project.utils.wandb_interactive import should_stop_from_wandb
 from kaggle_secrets import UserSecretsClient
 
 
@@ -173,6 +173,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
