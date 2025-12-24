@@ -90,6 +90,7 @@ class HFUtils:
             force_download=False
         )
 
+        print(f"[HFUtils] Downloading completed file saved at {local_path}")
         return str(local_path)
 
 
