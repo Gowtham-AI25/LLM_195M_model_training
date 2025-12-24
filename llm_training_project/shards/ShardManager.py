@@ -30,6 +30,11 @@ class ShardManager:
             raise KeyError(f"'remaining_shards' key not found in JSON file {self.json_path}")   
         
         return data["remaining_shards"]
+
+    def reload(self) -> None:
+        """Reload the shard list from the JSON file to sync with disk updates.
+           with this after every shard remove we update shard_file list in all ranks"""
+        self.shard_files = self._load_shard_files()
         
     def save_shard_files(self, shard_files: List[str]) -> None:
         """
