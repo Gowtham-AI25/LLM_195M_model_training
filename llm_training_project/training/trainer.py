@@ -69,7 +69,7 @@ def train_on_shard(
 
             # 4. Diagnostic Logging (End of Shard: 100th step)
             if rank == 0 and writer is not None:
-                if global_step % 50 == 0:
+                if global_step % 25 == 0:
                     writer.log_histograms(step=global_step, model=model)
                     writer.log_diagnostics(step=global_step, model=model, optimizer=optimizer)
 
