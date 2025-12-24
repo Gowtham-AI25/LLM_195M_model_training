@@ -140,32 +140,21 @@ def main():
                 wandb_run_id = wandb.run.id if wandb.run else None,
                 name = f"checkpoints_at_step_{model_states['global_step']}"       
             )
+            
             hf_api.save_checkpoint_to_hf( checkpoint_path = local_ckpt_path, commit_message = "ckpt_saved")
+            
+            shard_file = shard_manager.remove_shard()
+            print(f"Removed shard file {shard_file} from shard manager.")
 
         if world_size> 1:
             dist.barrier()
         
-        if rank == 0:
-            shard_file = shard_manager.remove_shard()
-            print(f"Removed shard file {shard_file} from shard manager.")
-        
-        if world_size > 1:
-            dist.barrier()
-        
         shard_manager.reload()  # reload shard list after removal in all ranks
         
-        continue_flag = torch.tensor(1, device=device)
-        if rank == 0:
-            user_input = input("Continue training? (y/n): ")
-            if user_input.lower() != "y":
-                continue_flag.fill_(0)
-        # Share decision with all ranks
-        if world_size > 1:
-            dist.broadcast(continue_flag, src=0)
         # All ranks obey the same decision
-        if continue_flag.item() == 0:
+        if should_stop_from_wandb(rank, world_size, device):
             if rank == 0:
-                print("Stopping training on all GPUs.")
+                print("Stopping training as requested via W&B 'stop_training' signal.")
             break
             
     if world_size > 1: 
@@ -173,6 +162,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
