@@ -4,6 +4,7 @@ from pathlib import Path
 from huggingface_hub import hf_hub_download, upload_file
 from urllib.parse import urlparse
 import shutil
+from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError, RevisionNotFoundError
 
 class HFUtils:
     def __init__(
@@ -62,44 +63,38 @@ class HFUtils:
     def load_checkpoint_from_hf(
         self,
         checkpoint_dir: str,
-    ) -> str:
+    ) -> str | None:
         """
         Download checkpoint from Hugging Face (via HF cache)
         and place it into the canonical checkpoint directory.
     
-        Final result:
-            <checkpoint_dir>/checkpoint.pt
+        Returns:
+            Path to checkpoint.pt if found, otherwise None.
         """
-    
-        # ------------------------------------------------
-        # 1. Canonical checkpoint path (ONLY truth)
-        # ------------------------------------------------
         checkpoint_dir = Path(checkpoint_dir)
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
     
         final_ckpt_path = checkpoint_dir / "checkpoint.pt"
-    
-        # ------------------------------------------------
-        # 2. HF repo-relative path (e.g. checkpoints/checkpoint.pt)
-        # ------------------------------------------------
         repo_file_path = self.hf_checkpoint_dir.strip("/")
     
-        print(f"[HFUtils] Downloading '{repo_file_path}' from Hugging Face...")
+        print(f"[HFUtils] Checking checkpoint '{repo_file_path}' on Hugging Face...")
+        try:
+            cached_ckpt_path = hf_hub_download(
+                repo_id=self.checkpoint_repo_id,
+                filename=repo_file_path,
+                repo_type=self.checkpoint_repo_type,
+                token=self.hf_token,
+                force_download=False,
+            )
     
-        # ------------------------------------------------
-        # 3. Download to HF cache (immutable)
-        # ------------------------------------------------
-        cached_ckpt_path = hf_hub_download(
-            repo_id=self.checkpoint_repo_id,
-            filename=repo_file_path,
-            repo_type=self.checkpoint_repo_type,
-            token=self.hf_token,
-            force_download=False,
-        )
+        except (EntryNotFoundError, RepositoryNotFoundError, RevisionNotFoundError):
+            print("[HFUtils] No checkpoint found on Hugging Face. Starting fresh.")
+            return None
     
-        # ------------------------------------------------
-        # 4. Copy into canonical checkpoint directory
-        # ------------------------------------------------
+        except Exception as e:
+            print(f"[HFUtils] Unexpected error while downloading checkpoint: {e}")
+            return None
+    
         if not final_ckpt_path.exists():
             print("[HFUtils] Copying checkpoint into training directory...")
             shutil.copy2(cached_ckpt_path, final_ckpt_path)
@@ -107,10 +102,7 @@ class HFUtils:
         print(f"[HFUtils] Checkpoint ready at: {final_ckpt_path}")
     
         return str(final_ckpt_path)
-
-
-
-
+        
     # --- 3. DATASET LOAD (HF → LOCAL) ---
 
     def download_hf_file_from_url(
