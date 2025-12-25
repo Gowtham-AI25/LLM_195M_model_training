@@ -31,6 +31,9 @@ def train_on_shard(
     num_batches = len(dataloader)
 
     for batch_idx, batch in enumerate(dataloader):
+            
+        torch.compiler.cudagraph_mark_step_begin()
+            
         inputs, targets = batch
         inputs = inputs.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
