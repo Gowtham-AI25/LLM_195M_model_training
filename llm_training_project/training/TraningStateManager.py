@@ -6,6 +6,8 @@ from llm_training_project.utils.Scheduler import Scheduler_4phase
 from llm_training_project.checkpoints_dir.checkpoint import CheckpointManager
 from llm_training_project.config.train_config import LLM_training_config
 from llm_training_project.config.model_config import LLM_model_config
+import torch._inductor.config as inductor_config
+
 
 
 
@@ -91,7 +93,9 @@ class TrainingStateManager:
             )
             global_step = checkpoint_info["global_step"]
             wandb_run_id = checkpoint_info["wandb_run_id"]
-    
+
+        # 🔒 Disable CUDA Graphs (REQUIRED for grad accumulation + DDP)
+        inductor_config.triton.cudagraphs = False
         # 6. COMPILE FIRST (ONLY THE MODEL)
         if self.model_config.compile_model:
             model = torch.compile(
