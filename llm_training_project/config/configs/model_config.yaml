@@ -2,27 +2,28 @@
 # Tokenizer / Embedding
 # -------------------------
 vocab_size: 32000
-emb_dim: 864            # Fixed: 864 is exactly divisible by 12 (864 / 12 = 72)
+emb_dim: 1024                
 padding_idx: 0
-max_seq_len: 1024       # Set to 1024 as requested
-tie_embeddings: true    # Weight tying enabled to save params for depth
+max_seq_len: 1024
+tie_embeddings: true         # Essential to fit 16 layers at this width
 
 # -------------------------
 # Transformer Depth
 # -------------------------
-n_blocks: 18            # 18 blocks + 864 width hits the ~195M param target perfectly
+n_blocks: 16                 # Increased depth for better reasoning
 
 # -------------------------
-# Attention (GQA)
+# Attention (GQA 16/8)
 # -------------------------
-num_q_heads: 12         # As requested
-num_kv_heads: 6         # As requested
+num_q_heads: 16             
+num_kv_heads: 8              
 rope_base: 10000.0
 
 # -------------------------
 # FFN (SwiGLU)
 # -------------------------
-ffn_hidden_dim: 2592    # Scaled to maintain the 195M parameter budget
+# Formula: 3 * emb_dim * ffn_hidden_dim
+ffn_hidden_dim: 2752         
 
 # -------------------------
 # Stability / Optimization
@@ -30,8 +31,3 @@ ffn_hidden_dim: 2592    # Scaled to maintain the 195M parameter budget
 eps: 1.0e-6
 dropout_rate: 0.1
 bias: false
-
-# -------------------------
-# Compile
-# -------------------------
-compile_model: false
