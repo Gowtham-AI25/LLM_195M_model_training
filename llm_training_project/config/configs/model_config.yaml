@@ -10,7 +10,7 @@ tie_embeddings: true         # Essential to fit 16 layers at this width
 # -------------------------
 # Transformer Depth
 # -------------------------
-n_blocks: 16                 # Increased depth for better reasoning
+n_blocks: 18                 # Increased depth for better reasoning
 
 # -------------------------
 # Attention (GQA 16/8)
