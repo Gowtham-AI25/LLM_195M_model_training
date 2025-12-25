@@ -97,7 +97,7 @@ class TrainingStateManager:
         if self.model_config.compile_model:
             model = torch.compile(
                 model,
-                mode="max-autotune,
+                mode="max-autotune",
                 fullgraph=False,     # 🔴 MUST be False
                 dynamic=False,
                 backend="inductor"
