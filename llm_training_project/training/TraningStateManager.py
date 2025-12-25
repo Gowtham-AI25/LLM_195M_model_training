@@ -59,60 +59,60 @@ class TrainingStateManager:
 
 
 
-def load_training_state(self, model_cls, local_rank=0):
-
-    # 1. Create PLAIN model (NO DDP)
-    model = self._create_plain_model(model_cls)
-
-    # 2. Optimizer
-    optimizer = AdamW(
-        params=model.parameters(),
-        lr=self.train_config.learning_rate,
-        betas=(self.train_config.beta1, self.train_config.beta2),
-        weight_decay=self.train_config.weight_decay,
-    )
-
-    # 3. Scheduler
-    scheduler = Scheduler_4phase(optimizer, self.train_config)
-
-    # 4. AMP Scaler
-    scaler = GradScaler(enabled=self.train_config.use_amp)
-
-    global_step = 0
-    wandb_run_id = None
-
-    # 5. Load checkpoint INTO PLAIN MODEL
-    if self.checkpoint_manager.checkpoint_exists():
-        checkpoint_info = self.checkpoint_manager.load_checkpoint(
-            model=model,
-            optimizer=optimizer,
-            scheduler=scheduler,
-            scaler=scaler,
+    def load_training_state(self, model_cls, local_rank=0):
+    
+        # 1. Create PLAIN model (NO DDP)
+        model = self._create_plain_model(model_cls)
+    
+        # 2. Optimizer
+        optimizer = AdamW(
+            params=model.parameters(),
+            lr=self.train_config.learning_rate,
+            betas=(self.train_config.beta1, self.train_config.beta2),
+            weight_decay=self.train_config.weight_decay,
         )
-        global_step = checkpoint_info["global_step"]
-        wandb_run_id = checkpoint_info["wandb_run_id"]
-
-    # 6. COMPILE FIRST (ONLY THE MODEL)
-    if self.model_config.compile_model:
-        model = torch.compile(
-            model,
-            mode=self.model_config.compile_mode,
-            fullgraph=False,     # 🔴 MUST be False
-            dynamic=False,
-            backend="inductor"
-        )
-
-    # 7. THEN wrap with DDP
-    model = self._wrap_ddp_if_needed(model, local_rank)
-
-    return {
-        "model": model,
-        "optimizer": optimizer,
-        "scheduler": scheduler,
-        "scaler": scaler,
-        "global_step": global_step,
-        "wandb_run_id": wandb_run_id,
-    }
+    
+        # 3. Scheduler
+        scheduler = Scheduler_4phase(optimizer, self.train_config)
+    
+        # 4. AMP Scaler
+        scaler = GradScaler(enabled=self.train_config.use_amp)
+    
+        global_step = 0
+        wandb_run_id = None
+    
+        # 5. Load checkpoint INTO PLAIN MODEL
+        if self.checkpoint_manager.checkpoint_exists():
+            checkpoint_info = self.checkpoint_manager.load_checkpoint(
+                model=model,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                scaler=scaler,
+            )
+            global_step = checkpoint_info["global_step"]
+            wandb_run_id = checkpoint_info["wandb_run_id"]
+    
+        # 6. COMPILE FIRST (ONLY THE MODEL)
+        if self.model_config.compile_model:
+            model = torch.compile(
+                model,
+                mode=self.model_config.compile_mode,
+                fullgraph=False,     # 🔴 MUST be False
+                dynamic=False,
+                backend="inductor"
+            )
+    
+        # 7. THEN wrap with DDP
+        model = self._wrap_ddp_if_needed(model, local_rank)
+    
+        return {
+            "model": model,
+            "optimizer": optimizer,
+            "scheduler": scheduler,
+            "scaler": scaler,
+            "global_step": global_step,
+            "wandb_run_id": wandb_run_id,
+        }
 
 
 
