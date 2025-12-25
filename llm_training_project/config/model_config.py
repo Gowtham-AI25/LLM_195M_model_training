@@ -32,7 +32,7 @@ class LLM_model_config(BaseModel):
 
     # ---- compile settings ----
     compile_model: bool = Field(True, description="Enable torch.compile for graph optimization.")
-    compile_mode: Literal['default', 'reduce-overhead', 'max-autotune'] = Field("default", description="Mode for torch.compile.")
+    compile_mode: Literal['default', 'reduce-overhead', 'max-autotune'] = Field("reduce-overhead", description="Mode for torch.compile.")
 
 
 
