@@ -5,7 +5,7 @@
 # -------------------------
 # 1. Training Loop & Shard Invariant
 # -------------------------
-total_training_steps: 11250      # Matches 450 shards @ 25 steps/shard
+total_training_steps: 12500      # Matches 450 shards @ 25 steps/shard
 accumulation_steps: 20           # 1 Optimizer Step = 1 Full Shard (Sync Invariant)
 max_grad_norm: 1.0               # Prevents gradient explosion in Phase 2/3
 device: cuda
@@ -25,10 +25,10 @@ optim_eps: 1.0e-8
 # 3. LR Scheduler (4-Phase WSD + True Anneal)
 # -------------------------
 # Note: Every step here is a shard-synchronized optimizer update.
-warmup_steps: 450                # Phase 1: 18 Shards (Linear Ramp)
-plateau_steps: 1800              # Phase 2: 72 Shards (Constant Max LR)
-decay_steps: 7200                # Phase 3: 288 Shards (Linear/Cosine Decay)
-anneal_steps: 1800               # Phase 4: 72 Shards (Terminal Cool-down)
+warmup_steps: 500                # Phase 1: 20 Shards (Linear Ramp)
+plateau_steps: 2000              # Phase 2: 80 Shards (Constant Max LR)
+decay_steps: 8500                # Phase 3: 3 Shards (Linear/Cosine Decay)
+anneal_steps: 1500               # Phase 4: 60 Shards (Terminal Cool-down)
 min_lr: 1.0e-6                   # Absolute floor for final weight stabilization
 
 # -------------------------
