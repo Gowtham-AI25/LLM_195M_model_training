@@ -6,7 +6,7 @@
 # 1. Training Loop & Shard Invariant
 # -------------------------
 total_training_steps: 11250      # Matches 450 shards @ 25 steps/shard
-accumulation_steps: 25           # 1 Optimizer Step = 1 Full Shard (Sync Invariant)
+accumulation_steps: 20           # 1 Optimizer Step = 1 Full Shard (Sync Invariant)
 max_grad_norm: 1.0               # Prevents gradient explosion in Phase 2/3
 device: cuda
 num_devices: 2                   # Total Effective Batch: 16 sequences per micro-step
@@ -35,7 +35,7 @@ min_lr: 1.0e-6                   # Absolute floor for final weight stabilization
 # 4. Data & Precision
 # -------------------------
 block_size: 1024
-batch_size: 8                    # Hardware VRAM limit
+batch_size: 10                    # Hardware VRAM limit
 use_amp: true
 dtype: float16                 # Required for SwiGLU variance handling
 num_workers: 4
