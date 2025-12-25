@@ -1,68 +1,58 @@
 # =========================================================
-# LLM Training Configuration
+# Final SLM Training Config: 220M-230M Model
 # =========================================================
 
-# =========================
-# 1. Training Loop
-# =========================
-total_training_steps: 15000
-accumulation_steps: 10
-max_grad_norm: 1.0
-
-# Device & Distributed
+# -------------------------
+# 1. Training Loop & Shard Invariant
+# -------------------------
+total_training_steps: 11250      # Matches 450 shards @ 25 steps/shard
+accumulation_steps: 25           # 1 Optimizer Step = 1 Full Shard (Sync Invariant)
+max_grad_norm: 1.0               # Prevents gradient explosion in Phase 2/3
 device: cuda
-num_devices: 2
+num_devices: 2                   # Total Effective Batch: 16 sequences per micro-step
 
-# =========================
-# 2. Optimizer
-# =========================
+# -------------------------
+# 2. Optimizer (AdamW - Accuracy First)
+# -------------------------
 optimizer_type: AdamW
-learning_rate: 2.0e-4
-weight_decay: 0.01
-
+learning_rate: 1.6e-4            # Optimal band for BS=8 / 220M logic
+weight_decay: 0.01               # Decoupled; safe for RMSNorm/SwiGLU stability
 beta1: 0.9
-beta2: 0.95
+beta2: 0.95                      # Standard for long-decay stability
 optim_eps: 1.0e-8
 
-# =========================
-# 3. LR Scheduler (4-phase)
-# =========================
-scheduler_type: CosineAnnealingWithWarmup
-min_lr_ratio: 0.1
+# -------------------------
+# 3. LR Scheduler (4-Phase WSD + True Anneal)
+# -------------------------
+# Note: Every step here is a shard-synchronized optimizer update.
+warmup_steps: 450                # Phase 1: 18 Shards (Linear Ramp)
+plateau_steps: 1800              # Phase 2: 72 Shards (Constant Max LR)
+decay_steps: 7200                # Phase 3: 288 Shards (Linear/Cosine Decay)
+anneal_steps: 1800               # Phase 4: 72 Shards (Terminal Cool-down)
+min_lr: 1.0e-6                   # Absolute floor for final weight stabilization
 
-warmup_steps: 600
-plateau_steps: 2400
-decay_steps: 11000
-anneal_steps: 1000
-
-# =========================
-# 4. Data Loader
-# =========================
-
+# -------------------------
+# 4. Data & Precision
+# -------------------------
 block_size: 1024
-batch_size: 10
+batch_size: 8                    # Hardware VRAM limit
+use_amp: true
+dtype: float16                 # Required for SwiGLU variance handling
 num_workers: 4
 pin_memory: true
 
-# =========================
-# 5. AMP /  Precision
-# =========================
-use_amp: true
-dtype: float16
+# -------------------------
+# 5. Logging & Diagnostics
+# -------------------------
+log_every_steps: 25              # Logs exactly once per shard
+checkpoint_every_steps: 450      # Checkpoint every 18 shards (aligns with phase shifts)
+eval_every_steps: 450
 
-# =========================
-# 6. Logging & Checkpointing
-# =========================
-log_every_steps: 1
-checkpoint_every_steps: 50
-eval_every_steps: 100
-
-# ========================= 
+# -------------------------
 # 7. Paths
-# =========================
+# -------------------------
 dataset_dir: "llm_training_project/shards"
 checkpoint_dir: "llm_training_project/checkpoints_dir/checkpoints"
 
 shard_manager_json_path: "llm_training_project/shards/shard_files.json"
 tensorboard_log_dir: "llm_training_project/log/tb_logs"
-
