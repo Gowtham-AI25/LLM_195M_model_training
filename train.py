@@ -1,8 +1,8 @@
 import os
-os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
-os.environ["TORCHINDUCTOR_CUDAGRAPHS"] = "0"
-import torch._inductor.config as inductor_config
-inductor_config.triton.cudagraphs = False
+# os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+# os.environ["TORCHINDUCTOR_CUDAGRAPHS"] = "0"
+# import torch._inductor.config as inductor_config
+# inductor_config.triton.cudagraphs = False
 import torch 
 import gc
 import wandb
@@ -184,6 +184,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
