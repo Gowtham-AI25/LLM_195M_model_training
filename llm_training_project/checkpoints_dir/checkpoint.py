@@ -76,33 +76,35 @@ class CheckpointManager:
             scheduler,
             scaler,
             name: str = "checkpoint",
-    ) -> int:
+    ) -> dict: # Updated hint to reflect returning a dictionary
         """
         Load the training state from a checkpoint file.
-        Args:
-            model: The model to load.
-            optimizer (torch.optim.Optimizer): The optimizer to load.
-            scheduler: The learning rate scheduler to load.
-            scaler (torch.cuda.amp.GradScaler): The gradient scaler to load.
-            name (str): The name of the checkpoint file.
-        Returns:
-            int: The global training step at the time of saving the checkpoint.
         """
-
         path = self.checkpoint_path(name)
-
-        state = torch.load(path, map_location = self.device)
-
-        model.load_state_dict(state["model_state_dict"])
+        state = torch.load(path, map_location=self.device)
+    
+        # 1. Get the state dict from the saved file
+        raw_state_dict = state["model_state_dict"]
+        
+        # 2. Create a new state dict with stripped prefixes
+        # This removes '_orig_mod.' which is added when saving a compiled model
+        clean_state_dict = {
+            (k.replace("_orig_mod.", "") if k.startswith("_orig_mod.") else k): v 
+            for k, v in raw_state_dict.items()
+        }
+    
+        # 3. Load the cleaned state dict into the plain model
+        model.load_state_dict(clean_state_dict)
+    
+        # Load remaining states
         optimizer.load_state_dict(state["optimizer_state_dict"])
         scheduler.load_state_dict(state["scheduler_state_dict"])
         scaler.load_state_dict(state["scaler_state_dict"])
-
+    
         return {
             "global_step": state.get("global_step", 0),
             "wandb_run_id": state.get("wandb_run_id", None)
         }
-    
-    
+        
 
              
