@@ -81,7 +81,7 @@ def main():
         # Initialize W&B
         wandb.init(
             project="LLM_195M_Training",
-            id=resume_id, 
+            id="e7u25vs1", 
             resume="allow" if resume_id else None,
             config={**train_config.dict(), **model_config.dict()}
         )
@@ -181,6 +181,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
