@@ -1,127 +1,116 @@
-import torch 
-from torch.nn.utils import clip_grad_norm_
-from torch.amp import autocast
-import math
-import wandb
+import torch
+from torch.optim import AdamW
+from torch.amp import GradScaler
+from torch.nn.parallel import DistributedDataParallel as DDP
+from llm_training_project.utils.Scheduler import Scheduler_4phase
+from llm_training_project.checkpoints_dir.checkpoint import CheckpointManager
+from llm_training_project.config.train_config import LLM_training_config
+from llm_training_project.config.model_config import LLM_model_config
 
-def train_on_shard(
-        model: torch.nn.Module,
-        dataloader: torch.utils.data.DataLoader,
-        optimizer: torch.optim.Optimizer,
-        scheduler,
-        criterion: torch.nn.CrossEntropyLoss,  
-        device: torch.device,
-        scaler: torch.cuda.amp.GradScaler,
-        start_global_step: int, 
-        max_grad_norm: float,
-        gradient_accumulation_steps: int = 25,
-        writer = None,
-        rank: int = 0,
-        dtype: torch.dtype = None
+
+
+
+class TrainingStateManager:
+    """
+    Manages the training state, including saving and loading checkpoints
+    for the model, optimizer, scheduler, scaler, etc.
+    """
+
+    def __init__(
+        self,
+        train_config,
+        model_config,
+        checkpoint,
+        device,
     ):
-    model.train()
-    optimizer.zero_grad(set_to_none=True)
+        self.train_config = train_config
+        self.model_config = model_config
+        self.device = device
+        self.checkpoint_manager = checkpoint
 
-    total_raw_loss = 0.0
-    num_micro_batches = 0
-    global_step = start_global_step
+
+
+    def _create_plain_model(self, model_cls):
+        """
+        Create model WITHOUT DDP wrapping.
+        """
+        model = model_cls(self.model_config)
+        model.to(self.device)
+        return model
+
+
+
+    def _wrap_ddp_if_needed(self, model, local_rank):
+        """
+        Wrap model with DDP if distributed training is enabled.
+        """
+        if self.train_config.num_devices > 1:
+            if not torch.distributed.is_initialized():
+                raise RuntimeError("torch.distributed is not initialized for DDP.")
+
+            model = DDP(
+                model,
+                device_ids=[local_rank],
+                output_device=local_rank,
+                broadcast_buffers=False,
+                find_unused_parameters=False,
+            )
+
+        return model
+
+
+
+    def load_training_state(self, model_cls, local_rank=0):
     
-    accum_loss = 0.0
-    num_batches = len(dataloader)
+        # 1. Create PLAIN model (NO DDP)
+        model = self._create_plain_model(model_cls)
+    
+        # 2. Optimizer
+        optimizer = AdamW(
+            params=model.parameters(),
+            lr=self.train_config.learning_rate,
+            betas=(self.train_config.beta1, self.train_config.beta2),
+            weight_decay=self.train_config.weight_decay,
+        )
+    
+        # 3. Scheduler
+        scheduler = Scheduler_4phase(optimizer, self.train_config)
+    
+        # 4. AMP Scaler
+        scaler = GradScaler(enabled=self.train_config.use_amp)
+    
+        global_step = 0
+        wandb_run_id = None
+    
+        # 5. Load checkpoint INTO PLAIN MODEL
+        if self.checkpoint_manager.checkpoint_exists():
+            checkpoint_info = self.checkpoint_manager.load_checkpoint(
+                model=model,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                scaler=scaler,
+            )
+            global_step = checkpoint_info["global_step"]
+            wandb_run_id = checkpoint_info["wandb_run_id"]
 
-    # ---------------------------------------------------------
-    # Resolve dtype string to torch object once outside the loop
-    # ---------------------------------------------------------
-    if isinstance(dtype, str):
-        dtype = getattr(torch, dtype)
-
-    for batch_idx, batch in enumerate(dataloader):
-        torch.compiler.cudagraph_mark_step_begin()
-            
-        inputs, targets = batch
-        inputs = inputs.to(device, non_blocking=True)
-        targets = targets.to(device, non_blocking=True)
-
-        # 1. Forward pass
-        with autocast(device_type=device.type, dtype=dtype):
-            logits = model(inputs)
-            raw_loss = criterion(logits.view(-1, logits.size(-1)), targets.view(-1))
-            # We always divide by the target accumulation steps to keep gradients normalized
-            scaled_loss = raw_loss / gradient_accumulation_steps 
-
-        # 2. Backward pass
-        is_accum_step = (batch_idx + 1) % gradient_accumulation_steps == 0
-        is_final_batch = (batch_idx + 1) == num_batches
-        
-        # CULPRIT FIX: Only update at end IF we didn't just update on the prev step
-        should_update = is_accum_step or (is_final_batch and not is_accum_step)
-
-        if not should_update:
-            with model.no_sync():
-                scaler.scale(scaled_loss).backward()
-        else:
-            scaler.scale(scaled_loss).backward()
-
-            # 3. Optimization Step
-            scaler.unscale_(optimizer)
-            
-            # --- MATH FIX FOR PARTIAL BATCHES ---
-            # If the shard ends on e.g. batch 10, but we expect 25, 
-            # the gradients are 2.5x too small. We must scale them back up.
-            actual_accum_count = (batch_idx % gradient_accumulation_steps) + 1
-            if should_update and not is_accum_step:
-                scale_fix = gradient_accumulation_steps / actual_accum_count
-                for p in model.parameters():
-                    if p.grad is not None:
-                        p.grad.data.mul_(scale_fix)
-            # ------------------------------------
-
-            # Clip and Log Norm
-            grad_norm = clip_grad_norm_(model.parameters(), max_grad_norm).item()
-
-            # 4. Metric Logging
-            # Use actual_accum_count to ensure the average loss is accurate
-            avg_step_loss = accum_loss / actual_accum_count
-            perplexity = math.exp(avg_step_loss) if avg_step_loss < 20 else float("inf")
-
-            if rank == 0:
-                print(f"Step {global_step} | Loss: {avg_step_loss:.4f} | GradNorm: {grad_norm:.2f} | LR: {optimizer.param_groups[0]['lr']:.6f}")
-                
-                if writer is not None:
-                    if global_step % 25 == 0:
-                        writer.log_histograms(step=global_step, model=model)
-                        writer.log_diagnostics(step=global_step, model=model, optimizer=optimizer)
-                    
-                    writer.log_training_metric(
-                        step=global_step, loss=avg_step_loss, perplexity=perplexity,
-                        lr=optimizer.param_groups[0]["lr"], grad_scale=scaler.get_scale(), grad_norm=grad_norm
-                    )
-
-                if wandb.run is not None: 
-                    wandb.log({
-                        "performance/loss": avg_step_loss,
-                        "performance/learning_rate": optimizer.param_groups[0]["lr"],
-                        "system/grad_norm": grad_norm,
-                    }, step=global_step)
-
-            # 5. Weights update
-            scaler.step(optimizer)
-            scaler.update()
-            optimizer.zero_grad(set_to_none=True)
-            scheduler.step()
-            
-            # Reset trackers for next global step
-            accum_loss = 0.0
-            global_step += 1
-
-        # Global stats tracking
-        raw_loss_val = raw_loss.item()
-        accum_loss += raw_loss_val
-        total_raw_loss += raw_loss_val
-        num_micro_batches += 1
-
-    return {
-        "global_step": global_step,
-        "total_loss": total_raw_loss,
-        "num_micro_batches": num_micro_batches
-    }
+        # 6. COMPILE FIRST (ONLY THE MODEL)
+        if self.model_config.compile_model:
+            model = torch.compile(
+                model,
+                mode="default",
+                fullgraph=False,     # 🔴 MUST be False
+                dynamic=False,
+                backend="inductor"
+            )
+    
+        # 7. THEN wrap with DDP
+        model = self._wrap_ddp_if_needed(model, local_rank)
+    
+        return {
+            "model": model,
+            "optimizer": optimizer,
+            "scheduler": scheduler,
+            "scaler": scaler,
+            "global_step": global_step,
+            "wandb_run_id": wandb_run_id,
+        }
