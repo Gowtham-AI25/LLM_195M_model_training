@@ -77,7 +77,6 @@ def main():
     tb_logger = None
     if rank == 0:
         # W&B logger
-        resume_id = model_states.get("wandb_run_id")
         # Initialize W&B
         wandb.init(
             project="LLM_195M_Training",
@@ -183,6 +182,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
