@@ -82,7 +82,7 @@ def main():
             project="LLM_195M_Training",
             entity="gowthamgoli02-finai",
             id="e7u25vs1", 
-            resume="allow" if resume_id else None,
+            resume="allow" if "e7u25vs1" else None,
             config={**train_config.dict(), **model_config.dict()},
             settings=wandb.Settings(init_timeout=300)
         )
@@ -182,6 +182,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
