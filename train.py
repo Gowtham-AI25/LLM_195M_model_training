@@ -81,9 +81,11 @@ def main():
         # Initialize W&B
         wandb.init(
             project="LLM_195M_Training",
+            entity="gowthamgoli02-finai",
             id="e7u25vs1", 
             resume="allow" if resume_id else None,
-            config={**train_config.dict(), **model_config.dict()}
+            config={**train_config.dict(), **model_config.dict()},
+            settings=wandb.Settings(init_timeout=300)
         )
         
         # tensorboard logger
@@ -181,6 +183,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
