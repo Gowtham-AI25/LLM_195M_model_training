@@ -1,6 +1,5 @@
 {
   "remaining_shards": [
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0015.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0016.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0017.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0018.pt",
