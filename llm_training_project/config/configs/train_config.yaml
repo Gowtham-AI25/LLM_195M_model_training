@@ -9,7 +9,7 @@ total_training_steps: 12500      # Matches 450 shards @ 25 steps/shard
 accumulation_steps: 20           # 1 Optimizer Step = 1 Full Shard (Sync Invariant)
 max_grad_norm: 1.0               # Prevents gradient explosion in Phase 2/3
 device: cuda
-num_devices: 2                   # Total Effective Batch: 16 sequences per micro-step
+num_devices: 1                   # Total Effective Batch: 16 sequences per micro-step
 
 # -------------------------
 # 2. Optimizer (AdamW - Accuracy First)
