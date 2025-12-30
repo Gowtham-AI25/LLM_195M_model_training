@@ -1,12 +1,5 @@
 {
   "remaining_shards": [
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0023.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0024.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0025.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0026.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0027.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0028.pt",
-    "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0029.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0030.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0031.pt",
     "https://huggingface.co/datasets/gowthamgoli/LLM_3B_tokens/resolve/main/tokens_merged/batch_0032.pt",
