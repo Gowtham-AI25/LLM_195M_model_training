@@ -23,7 +23,8 @@ def train_on_shard(
         logger: WandBLogger = None,
         metrics_engine: DiagnosticMetrics = None,
         rank: int = 0,
-        dtype: torch.dtype = None
+        dtype: torch.dtype = None,
+        val_local_path: str = None,
 ) -> Dict[str, float]:
     """
     Train model on a single shard with efficient metric computation and logging.
@@ -83,7 +84,11 @@ def train_on_shard(
             )
 
             # Scale loss for gradient accumulation
-            scaled_loss = raw_loss / gradient_accumulation_steps
+            window_start = batch_idx - (batch_idx % gradient_accumulation_steps)
+            remaining_in_shard = num_batches - window_start
+            current_accum_size = min(gradient_accumulation_steps, remaining_in_shard)
+
+            scaled_loss = raw_loss / current_accum_size
 
         # -----------------------------------------------------
         # 🔹 BACKWARD PASS (Accumulation Logic)
@@ -199,10 +204,10 @@ def train_on_shard(
                         model=model
                     )
                 
-                # =========================================================
-                # 🔴 VALIDATION (EVERY 100 STEPS)
-                # =========================================================
-                if (
+            # =========================================================
+            # 🔴 VALIDATION (EVERY 100 STEPS)
+            # =========================================================
+            if (
                     rank == 0 and
                     logger is not None and
                     global_step % 100 == 0
@@ -210,8 +215,6 @@ def train_on_shard(
                     run_validation(
                         model=model,
                         criterion=criterion,
-                        hf_api=hf_api,                     # pass from train.py
-                        hf_file_url=val_file_url,          # validation file URL
                         local_path=val_local_path,         # local .pt path
                         device=device,
                         logger=logger,

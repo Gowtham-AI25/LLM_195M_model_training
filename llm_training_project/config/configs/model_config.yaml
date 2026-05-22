@@ -31,3 +31,9 @@ ffn_hidden_dim: 2752
 eps: 1.0e-6
 dropout_rate: 0.1
 bias: false
+
+# -------------------------
+# Compile settings
+# -------------------------
+compile_model: true
+compile_mode: default

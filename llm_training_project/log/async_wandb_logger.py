@@ -93,7 +93,9 @@ class AsyncWandBLogger:
             self.queue.put((fn, kwargs))
         else:
             # Optional: drop task or handle overflow
-            pass
+            self._dropped += 1
+            if self._dropped % 10 == 0:
+                print(f"[AsyncLogger Warning] {self._dropped} log entries dropped — queue full")
 
     # =========================================================
     # 🟢 STEP LOGGING

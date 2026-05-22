@@ -81,7 +81,7 @@ class CheckpointManager:
         Load the training state from a checkpoint file.
         """
         path = self.checkpoint_path(name)
-        state = torch.load(path, map_location=self.device)
+        state = torch.load(path, map_location=self.device, weights_only=False)
     
         # 1. Get the state dict from the saved file
         raw_state_dict = state["model_state_dict"]

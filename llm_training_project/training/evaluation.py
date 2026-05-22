@@ -7,8 +7,6 @@ def run_validation(
     *,
     model: torch.nn.Module,
     criterion: torch.nn.CrossEntropyLoss,
-    hf_api,
-    hf_file_url: str,
     local_path: str,
     device: torch.device,
     logger,
@@ -40,24 +38,15 @@ def run_validation(
     """
 
     # =========================================================
-    # 🔹 1. DOWNLOAD IF NOT EXISTS
+    # 🔹 1. CHECK IF FILE NOT EXISTS
     # =========================================================
     if not os.path.exists(local_path):
-        os.makedirs(os.path.dirname(local_path), exist_ok=True)
-
-        hf_api.download_hf_file_from_url(
-            file_url=hf_file_url,
-            local_datasetdir=os.path.dirname(local_path)
-        )
+        raise FileNotFoundError(f"Validation data not found at {local_path}")
 
     # =========================================================
     # 🔹 2. LOAD VALIDATION DATA
     # =========================================================
-    data = torch.load(local_path)
-
-    # Expected format:
-    # data = [(input_ids, target_ids), ...]
-    # OR dict with tensors
+    data = torch.load(local_path, map_location="cpu", weights_only=True)
 
     # Normalize format
     if isinstance(data, dict):
@@ -71,55 +60,64 @@ def run_validation(
     # 🔹 3. EVAL MODE
     # =========================================================
     model.eval()
+    
+    try:
+        total_loss = 0.0
+        total_tokens = 0
+        num_batches = 0
 
-    total_loss = 0.0
-    total_tokens = 0
-    num_batches = 0
+        # =========================================================
+        # 🔹 4. VALIDATION LOOP (NO GRAD)
+        # =========================================================
+        with torch.no_grad():
 
-    # =========================================================
-    # 🔹 4. VALIDATION LOOP (NO GRAD)
-    # =========================================================
-    with torch.no_grad():
+            for i, (input_ids, target_ids) in enumerate(dataset):
 
-        for i, (input_ids, target_ids) in enumerate(dataset):
+                if i >= max_batches:
+                    break
 
-            if i >= max_batches:
-                break
+                input_ids = input_ids.to(device)
+                target_ids = target_ids.to(device)
 
-            input_ids = input_ids.to(device)
-            target_ids = target_ids.to(device)
+                logits = model(input_ids)
 
-            logits = model(input_ids)
+                loss = criterion(
+                    logits.view(-1, logits.size(-1)),
+                    target_ids.view(-1)
+                )
 
-            loss = criterion(
-                logits.view(-1, logits.size(-1)),
-                target_ids.view(-1)
+                total_loss += loss.item()
+                total_tokens += input_ids.numel()
+                num_batches += 1
+
+                del input_ids, target_ids, logits, loss
+
+        # =========================================================
+        # 🔹 5. COMPUTE METRICS
+        # =========================================================
+        avg_loss = total_loss / max(1, num_batches)
+        perplexity = math.exp(avg_loss) if avg_loss < 20 else float("inf")
+
+        # =========================================================
+        # 🔹 6. LOG TO WANDB
+        # =========================================================
+        if logger is not None:
+            logger.log_validation(
+                step=step,
+                val_loss=avg_loss,
+                val_perplexity=perplexity
             )
-
-            total_loss += loss.item()
-            total_tokens += input_ids.numel()
-            num_batches += 1
-
+    
+    finally:
+        # =========================================================
+        # 🔹 7. BACK TO TRAIN MODE
+        # =========================================================
+        model.train()
+        torch.cuda.empty_cache()
+    
     # =========================================================
-    # 🔹 5. COMPUTE METRICS
+    # 🔹 8. RETURN METRICS
     # =========================================================
-    avg_loss = total_loss / max(1, num_batches)
-    perplexity = math.exp(avg_loss) if avg_loss < 20 else float("inf")
-
-    # =========================================================
-    # 🔹 6. LOG TO WANDB
-    # =========================================================
-    if logger is not None:
-        logger.log_validation(
-            step=step,
-            val_loss=avg_loss,
-            val_perplexity=perplexity
-        )
-
-    # =========================================================
-    # 🔹 7. BACK TO TRAIN MODE
-    # =========================================================
-    model.train()
 
     return {
         "validation/loss": avg_loss,

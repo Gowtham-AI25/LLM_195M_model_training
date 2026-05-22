@@ -45,6 +45,7 @@ def main():
         str(BASE_DIR / "llm_training_project/config/configs/hf_config.yaml")
     )
 
+
     user_secrets = UserSecretsClient()
     hf_api.hf_token = user_secrets.get_secret("hf_token")
 
@@ -92,6 +93,20 @@ def main():
         model_cls=LLM,
         local_rank=local_rank
     )
+
+    # after the checkpoint download barrier
+    val_local_path = train_config.val_local_path
+
+    if rank == 0:
+        val_file_url = train_config.val_file_url
+        os.makedirs(os.path.dirname(val_local_path), exist_ok=True)
+        hf_api.download_hf_file_from_url(
+            file_url=val_file_url,
+            local_datasetdir=os.path.dirname(val_local_path)
+        )
+
+    if world_size > 1:
+        dist.barrier()
 
     # =========================================================
     # 🔹 METRICS + LOGGER (ONLY RANK 0)
@@ -168,7 +183,8 @@ def main():
             logger=logger if rank == 0 else None,
             metrics_engine=metrics_engine if rank == 0 else None,
             rank=rank,
-            dtype=train_config.dtype
+            dtype=train_config.dtype,
+            val_local_path = val_local_path,
         )
 
         model_states["global_step"] = shard_stats["global_step"]

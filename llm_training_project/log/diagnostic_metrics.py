@@ -218,7 +218,7 @@ class DiagnosticMetrics:
             }
         """
 
-        emb = model.tok_embeddings.weight.detach()
+        emb = model.emb_layer.emb_layer.weight.detach()
         vocab_size = emb.size(0)
 
         if sample_size < vocab_size:

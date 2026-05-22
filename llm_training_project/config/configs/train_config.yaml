@@ -56,3 +56,6 @@ checkpoint_dir: "llm_training_project/checkpoints_dir/checkpoints"
 
 shard_manager_json_path: "llm_training_project/shards/shard_files.json"
 tensorboard_log_dir: "llm_training_project/log/tb_logs"
+
+val_file_url: 
+val_local_path: 

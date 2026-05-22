@@ -76,6 +76,8 @@ class LLM_training_config(BaseModel):
     checkpoint_dir: str = Field(..., description="Base directory for saving model checkpoints.")
     shard_manager_json_path: str = Field(..., description="Path to the JSON file listing dataset shard files.")
     tensorboard_log_dir: str = Field("tensorboard_logdir/exp1")    
+    hf_file_url: str = Field(..., description="Huggingface validation file URL.")
+    hf_local_path: str = Field(..., description="Local path for Huggingface validation file.")
 
     
     # =========================
@@ -92,6 +94,11 @@ class LLM_training_config(BaseModel):
                 * data["num_devices"]
             )
         return data
+    
+    @model_validator(mode="after")
+    def compute_min_lr_ratio(self):
+        self.min_lr_ratio = self.min_lr / self.learning_rate
+        return self
     
     @classmethod
     def load_from_yaml(cls, yaml_path: str) -> "LLM_training_config":

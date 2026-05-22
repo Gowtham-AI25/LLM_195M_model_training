@@ -49,7 +49,7 @@ class SingleShardDataset(Dataset):
                 torch.Tensor: Loaded tensor on the specified device.
         """
 
-        tensor = torch.load(shard_file, map_location="cpu")
+        tensor = torch.load(shard_file, map_location="cpu", weights_only=True)
         return tensor
     
     def __len__(self) -> int:
