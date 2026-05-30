@@ -110,14 +110,6 @@ def train_on_shard(
             # -------------------------------------------------
             scaler.unscale_(optimizer)
 
-            # Fix scaling for partial accumulation batches
-            actual_accum_count = (batch_idx % gradient_accumulation_steps) + 1
-            if should_update and not is_accum_step:
-                scale_fix = gradient_accumulation_steps / actual_accum_count
-                for p in model.parameters():
-                    if p.grad is not None:
-                        p.grad.data.mul_(scale_fix)
-
             # -------------------------------------------------
             # 🔹 GRADIENT CLIPPING
             # -------------------------------------------------

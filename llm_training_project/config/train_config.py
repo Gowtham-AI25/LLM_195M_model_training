@@ -37,6 +37,7 @@ class LLM_training_config(BaseModel):
     # =========================
     scheduler_type: Literal['CosineAnnealingWithWarmup'] = Field('CosineAnnealingWithWarmup', description="The learning rate scheduler.")
     min_lr_ratio: float = Field(0.1, ge=0.0, le=1.0, description="Minimum LR as a fraction of max LR.")
+    min_lr: float = Field(1e-6, gt=0.0, description="Minimum absolute LR value.")
     
     # Decay Curve Phases
     warmup_steps: int = Field(1000, ge=0, description="Linear warmup steps.")
@@ -76,8 +77,8 @@ class LLM_training_config(BaseModel):
     checkpoint_dir: str = Field(..., description="Base directory for saving model checkpoints.")
     shard_manager_json_path: str = Field(..., description="Path to the JSON file listing dataset shard files.")
     tensorboard_log_dir: str = Field("tensorboard_logdir/exp1")    
-    hf_file_url: str = Field(..., description="Huggingface validation file URL.")
-    hf_local_path: str = Field(..., description="Local path for Huggingface validation file.")
+    val_file_url: str = Field(..., description="Huggingface validation file URL.")
+    val_local_path: str = Field(..., description="Local path for Huggingface validation file.")
 
     
     # =========================

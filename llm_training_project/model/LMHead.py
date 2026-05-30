@@ -13,6 +13,7 @@ class LM_head(nn.Module):
             self.weight = shared_emb_weight.weight
         else:
             self.weight = shared_emb_weight
+        assert self.lm_head.weight.data_ptr() == self.emb_layer.emb_layer.weight.data_ptr(), "Weight tying broken"
 
     def forward(self, hidden_state: torch.Tensor) -> torch.Tensor:
         # Standard forward pass through the Linear layer.

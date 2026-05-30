@@ -20,11 +20,10 @@ class TransformerBlock(nn.Module):
         self.norm1 = RMSNorm(config)
         self.norm2 = RMSNorm(config)
 
-        self.dropout = nn.Dropout(config.dropout_rate)
 
     def forward(self, x: torch.Tensor, attn_mask: Optional[torch.Tensor] = None):
-        x = x + self.dropout(self.attn(self.norm1(x), attn_mask))
-        x = x + self.dropout(self.ffn(self.norm2(x)))
+        x = x + self.attn(self.norm1(x), attn_mask)
+        x = x + self.ffn(self.norm2(x))
         return x
     
 

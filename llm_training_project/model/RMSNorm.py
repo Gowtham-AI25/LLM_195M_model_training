@@ -9,9 +9,11 @@ class RMSNorm(nn.Module):
         self.weight = nn.Parameter(torch.ones(config.emb_dim))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        orig_dtype = x.dtype
+        x_f32 = x.float()
         # Optimized: x*x is faster than x.pow(2)
-        norm = (x * x).mean(dim=-1, keepdim=True)
+        norm = (x_f32 * x_f32).mean(dim=-1, keepdim=True)
         # Optimized: torch.rsqrt for fused hardware op
-        x_normed = x * torch.rsqrt(norm + self.eps)
+        x_normed = x_f32 * torch.rsqrt(norm + self.eps)
         # Optimized: Explicit view for clearer broadcasting to compiler
-        return x_normed * self.weight
+        return (x_normed * self.weight).to(orig_dtype)
