@@ -45,8 +45,8 @@ class RoPE_Gpu_optimized(nn.Module):
         # q, k: (B, H, T, Dh)
         T = q.size(-2)
 
-        cos = self.cos_cached[:T].unsqueeze(0).unsqueeze(0).dtype(q.dtype)
-        sin = self.sin_cached[:T].unsqueeze(0).unsqueeze(0).dtype(q.dtype)
+        cos = self.cos_cached[:T].unsqueeze(0).unsqueeze(0).to(q.dtype)
+        sin = self.sin_cached[:T].unsqueeze(0).unsqueeze(0).to(q.dtype)
 
         q = q * cos + self.rotate_half(q) * sin
         k = k * cos + self.rotate_half(k) * sin

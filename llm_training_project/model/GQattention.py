@@ -82,8 +82,8 @@ class Grouped_Query_Attention(nn.Module):
         # 5. Expand KV for GQA using Metadata-only views (Avoids repeat_interleave memory copies)
         if self.group_size > 1:
             # Efficiently broadcast KV heads to match Q heads
-        k = k.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).contiguous().view(B, self.num_q_heads, T, self.head_dim)
-        v = v.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).contiguous().view(B, self.num_q_heads, T, self.head_dim)
+            k = k.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).contiguous().view(B, self.num_q_heads, T, self.head_dim)
+            v = v.unsqueeze(2).expand(B, self.num_kv_heads, self.group_size, T, self.head_dim).contiguous().view(B, self.num_q_heads, T, self.head_dim)
 
         # 6. Optimized SDPA Call
         # Solves the "Mutually Exclusive Arguments" bug by forcing None for masks during causal pre-training

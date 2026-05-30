@@ -48,6 +48,8 @@ class LLM(nn.Module):
         self.final_norm = RMSNorm(config) # Final norm before the LM Head
         self.lm_head = LM_head(config, self.emb_layer.emb_layer)
 
+        assert self.lm_head.weight.data_ptr() == self.emb_layer.emb_layer.weight.data_ptr(), "Weight tying broken"
+
     def forward(self, input_ids: torch.Tensor, attn_mask: Optional[torch.Tensor] = None):
 
         # Start with token embeddings
