@@ -32,7 +32,7 @@ class AsyncWandBLogger:
 
         # Underlying logger (actual wandb calls happen here)
         self.base_logger = base_logger
-
+        self._dropped = 0 
         # Queue acts as buffer between training and logging
         self.queue = queue.Queue(maxsize=max_queue_size)
 
@@ -150,6 +150,43 @@ class AsyncWandBLogger:
         Logs validation metrics.
         """
         self._enqueue(self.base_logger.log_validation, **kwargs)
+
+    #==========================================================
+    # Dead nuron Logging
+    #==========================================================
+    def log_dead_neurons(self, **kwargs):
+        """
+        Logs dead neurons
+        """
+        self._enqueue(self.base_logger.log_dead_neurons, **kwargs)
+    
+    #===========================================================
+    # Gradient flow metrics
+    #===========================================================
+    def log_gradient_flow(self, **kwargs):
+        """
+        Async wrapper for gradient flow logging.
+        """
+        self._enqueue(self.base_logger.log_gradient_flow, **kwargs)
+    
+    def log_histograms(self, *, step, model, important_layers=None):
+        # snapshot weights and grads NOW on training thread
+        hist_data = {}
+        for name, param in model.named_parameters():
+            if important_layers and name not in important_layers:
+                continue
+            hist_data[f"weights/{name}"] = wandb.Histogram(
+                param.data.detach().cpu().numpy()
+            )
+            if param.grad is not None:
+                hist_data[f"grads/{name}"] = wandb.Histogram(
+                    param.grad.detach().cpu().numpy()
+                )
+        # enqueue pre-computed dict — no live model reference
+        self._enqueue(self.base_logger.log_histograms, 
+                    step=step, 
+                    hist_data=hist_data)
+    
 
     # =========================================================
     # 🔚 CLEAN SHUTDOWN

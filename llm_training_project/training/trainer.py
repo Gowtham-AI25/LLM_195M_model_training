@@ -143,7 +143,7 @@ def train_on_shard(
                 # =========================
                 if global_step % logger.interval_freq == 0:
 
-                    grad_metrics = metrics_engine.compute_grad_param_metrics(
+                    grad_metrics, flow_metrics = metrics_engine.compute_grad_metrics(
                         model=model
                     )
 
@@ -157,6 +157,21 @@ def train_on_shard(
                         grad_metrics=grad_metrics,
                         optimizer_metrics=opt_metrics
                     )
+
+                    dead_metrics = metrics_engine.compute_dead_neuron_metrics(
+                        model=model,
+                        sample_input=inputs[:2]
+                    )
+                    
+                    logger.log_dead_neurons(
+                        step=global_step,
+                        dead_metrics=dead_metrics
+                    )
+
+                    logger.log_gradient_flow(
+                            step=global_step,
+                            flow_metrics=flow_metrics
+                        )
 
                 # =========================
                 # 🔷 LOGIT METRICS

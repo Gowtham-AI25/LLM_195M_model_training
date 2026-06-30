@@ -175,42 +175,12 @@ class WandBLogger:
         self,
         *,
         step: int,
-        model: torch.nn.Module,
-        important_layers: Optional[list] = None
+        hist_data: dict,
     ) -> None:
-        """
-        Logs weight and gradient distributions.
-
-        Inputs:
-        -------
-        step : int
-
-        model : torch.nn.Module
-
-        important_layers : Optional[list]
-            List of parameter names to filter logging
-        """
-
         if step % self.histogram_freq != 0:
             return
-
-        hist_data = {}
-
-        for name, param in model.named_parameters():
-
-            if important_layers and name not in important_layers:
-                continue
-
-            hist_data[f"weights/{name}"] = wandb.Histogram(
-                param.data.detach().cpu().numpy()
-            )
-
-            if param.grad is not None:
-                hist_data[f"grads/{name}"] = wandb.Histogram(
-                    param.grad.detach().cpu().numpy()
-                )
-
         wandb.log(hist_data, step=step)
+
 
     # =========================================================
     # 🟣 VALIDATION LOGGING
@@ -238,6 +208,43 @@ class WandBLogger:
             "validation/loss": val_loss,
             "validation/perplexity": val_perplexity
         }, step=step)
+
+    #=================================================
+    # Log Dead neurons
+    #=================================================
+        
+    def log_dead_neurons(
+        self,
+        *,
+        step: int,
+        dead_metrics: Dict[str, float]
+    ) -> None:
+        wandb.log(dead_metrics, step=step)
+
+    def log_gradient_flow(
+        self,
+        *,
+        step: int,
+        flow_metrics: Dict[str, float]
+    ) -> None:
+        """
+        Logs per-layer gradient flow diagnostics.
+
+        Inputs:
+        -------
+        step : int
+
+        flow_metrics : Dict[str, float]
+            Output from compute_grad_metrics() second return value.
+            {
+                "grad_flow/first_block_norm":    float,
+                "grad_flow/mid_block_norm":      float,
+                "grad_flow/last_block_norm":     float,
+                "grad_flow/first_to_last_ratio": float,
+            }
+        """
+        if step % self.interval_freq == 0:
+            wandb.log(flow_metrics, step=step)
 
     # =========================================================
     # 🔚 FINALIZE RUN

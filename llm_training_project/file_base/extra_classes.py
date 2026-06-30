@@ -1,3 +1,4 @@
+import torch
 
 class Expert_naive(nn.Module):
     """Standard SwiGLU FFN layer used in LLaMA, Mistral, Qwen."""
